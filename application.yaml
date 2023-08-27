@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: root
+    password: z6!srKWJfnh8FyJ
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    charset: utf8mb4
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+      show-sql: true
+
+indexing-settings:
+  sites:
+    - url: https://playback.ru
+      name: PlayBack.Ru
+    - url: https://lenta.ru
+      name: Лента.ру
+    - url: https://skillbox.ru
+      name: Skillbox
