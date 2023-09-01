@@ -47,7 +47,7 @@ public class Page {
                 link.startsWith(prefix) &&
                 (link.endsWith("/") || link.endsWith(".html")) &&
                 !link.contains("#") &&
-                //link.contains("courses") &&
+                //link.contains("media") &&
                 //!link.matches("([^\\s]+(\\.(?i)(jpg|png|gif|bmp|pdf))$)") &&
                 !link.contains(" "));
     }

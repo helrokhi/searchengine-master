@@ -24,6 +24,13 @@ public class Words {
         this.wordsService = wordsService;
     }
 
+    /**
+     * Метод преобразует HTML-код переданной страницы в набор лемм и их количеств
+     * и сохранять эту информацию в таблицы lemma и index базы данных
+     *
+     * @param page объект класса Page
+     * @return объект класса Gradation extends Thread для выполнения задач параллельно
+     */
     public Gradation startGradation(Page page) {
         return new Gradation(page,
                 lemmaService,

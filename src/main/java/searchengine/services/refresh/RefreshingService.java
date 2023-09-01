@@ -3,29 +3,34 @@ package searchengine.services.refresh;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import searchengine.config.refresh.Refreshing;
-import searchengine.config.sites.SitesList;
 import searchengine.dto.indexing.IndexResponse;
+import searchengine.model.SiteEntity;
+import searchengine.services.sitemaps.SiteService;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class RefreshingService {
-    private final SitesList sites;
     private final Refreshing refreshing;
+    private final SiteService siteService;
 
     public IndexResponse getIndexPageResponse(String url) {
-        System.out.println("1. RefreshingService getIndexPageResponse" +
+        List<SiteEntity> siteEntityList = siteService.findAll();
+                System.out.println("1. RefreshingService getIndexPageResponse" +
                 " url " + url +
-                " isLinkInSites " + (refreshing.isLinkInSites(url, sites)) +
+                " isLinkInSites " + (refreshing.isLinkInSites(url, siteEntityList)) +
                 "");
         IndexResponse response = new IndexResponse();
 
-        if (!refreshing.isLinkInSites(url, sites)) {
+
+        if (!refreshing.isLinkInSites(url, siteEntityList)) {
             response.setResult(false);
             response.setError("Данная страница находится за пределами сайтов, " +
                     "\nуказанных в конфигурационном файле");
             return response;
         } else {
-            refreshing.refreshPageEntity(url, sites);
+            refreshing.refreshPageEntity(url, siteEntityList);
             response.setResult(true);
         }
         System.out.println("2. RefreshingService getIndexPageResponse " + response);

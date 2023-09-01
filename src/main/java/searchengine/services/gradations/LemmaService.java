@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
+import searchengine.model.SiteEntity;
 import searchengine.repositories.LemmaRepository;
 import searchengine.services.sitemaps.SiteService;
 
@@ -25,9 +26,8 @@ public class LemmaService {
         if (!newLemmaList.isEmpty()) lemmaRepository.saveAll(newLemmaList);
     }
 
-    public LemmaEntity findLemmaByLemmaAndSiteId(String key, Site site) {
-        int siteId = siteService.getSiteEntity(site).getId();
-        return lemmaRepository.findByLemma(key, siteId);
+    public LemmaEntity findLemmaByLemmaAndSiteId(String key, SiteEntity siteEntity) {
+        return lemmaRepository.findByLemma(key, siteEntity.getId());
     }
 
     public Integer findLemmaIdByLemmaAndSiteId(String key, int siteId) {
@@ -38,8 +38,8 @@ public class LemmaService {
         return lemmaRepository.countAllLemmas();
     }
 
-    public int getCountLemmasBySite(Site site) {
-        return lemmaRepository.countAllLemmasBySiteId(siteService.getSiteEntity(site).getId());
+    public int getCountLemmasBySiteEntity(SiteEntity siteEntity) {
+        return lemmaRepository.countAllLemmasBySiteId(siteEntity.getId());
     }
 
     public List<LemmaEntity> getAllLemmasEntity(int siteId, Collection<String> words) {
@@ -68,13 +68,13 @@ public class LemmaService {
         }
     }
 
-    public void deleteLemmas(Site site) {
-        int siteId = siteService.getSiteEntity(site).getId();
+    public void deleteLemmas(SiteEntity siteEntity) {
+        int siteId = siteEntity.getId();
         List<Integer> list = (List<Integer>) lemmaRepository.findAllLemmasIdBySiteId(siteId);
 
         lemmaRepository.deleteAllByIdInBatch(list);
         System.out.println("\tLemmaService deleteLemmas" +
-                " site " + site.getUrl() +
+                " siteEntity " + siteEntity.getUrl() +
                 " count " + list.size() +
                 " siteId " + siteId +
                 "");

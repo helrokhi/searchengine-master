@@ -7,13 +7,18 @@ import org.springframework.stereotype.Component;
 import searchengine.config.gradations.Gradation;
 import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
-import searchengine.config.sites.SitesList;
 import searchengine.model.PageEntity;
+import searchengine.model.SiteEntity;
 import searchengine.services.sitemaps.PageService;
 import searchengine.services.sitemaps.RemoveService;
 import searchengine.services.sitemaps.SiteMapService;
 import searchengine.services.sitemaps.SiteService;
 
+import java.util.List;
+
+/**
+ * класс является частью компонентов приложения
+ */
 @Component
 public class Refreshing {
     private Page page;
@@ -21,7 +26,8 @@ public class Refreshing {
     private SiteService siteService;
     private PageService pageService;
     private RemoveService removeService;
-
+    //автоматически найдет бины SiteMapService, SiteService, PageService, RemoveService
+    // и внедрит в них в Refreshing.
     @Autowired
     public Refreshing(
             SiteMapService siteMapService,
@@ -34,19 +40,29 @@ public class Refreshing {
         this.pageService = pageService;
         this.removeService = removeService;
     }
-
-    public void refreshPageEntity(String link, SitesList sites) {
+    /**
+     * Метод обновляет существующую (создает новую) отдельную страницу, адрес
+     * которой передан в параметре в таблице page базы данных,
+     * а также обновляет (создает) на основании HTML-код переданной страницы набор лемм
+     * и их количество в таблицах lemma и index базы данных.
+     * @param link адрес страницы
+     * @param siteEntityList список сайтов из конфигурационного файла
+     */
+    public void refreshPageEntity(String link, List<SiteEntity> siteEntityList) {
         System.out.println("1. Refreshing refreshPageEntity" +
                 " link " + link +
                 "");
-        Site site = siteService.getSite(link, sites);
-        PageEntity pageEntity = getPageEntity(link, site);
-        String url = site.getUrl();
+        SiteEntity siteEntity = siteService.getSiteEntityByLink(link, siteEntityList);
+        PageEntity pageEntity = getPageEntity(link, siteEntity);
+        String url = siteEntity.getUrl();
+        Site site = new Site();
+        site.setUrl(siteEntity.getUrl());
+        site.setName(siteEntity.getUrl());
 
         page = new Page(link, url, site);
 
         if (pageEntity == null) {
-            page.setSiteId(siteService.getSiteEntity(site).getId());
+            page.setSiteId(siteEntity.getId());
         } else {
             page.setSiteId(pageEntity.getSiteId());
             page.setPageId(pageEntity.getId());
@@ -62,12 +78,12 @@ public class Refreshing {
                 "");
     }
 
-    private PageEntity getPageEntity(String link, Site site) {
-        return pageService.getPageByPath(getPath(link, site));
+    private PageEntity getPageEntity(String link, SiteEntity siteEntity) {
+        return pageService.getPageByPath(getPath(link, siteEntity));
     }
 
-    private String getPath(String link, Site site) {
-        return link.replace(site.getUrl(), "");
+    private String getPath(String link, SiteEntity siteEntity) {
+        return link.replace(siteEntity.getUrl(), "");
     }
 
     private void startGradation() {
@@ -80,7 +96,7 @@ public class Refreshing {
         }
     }
 
-    public boolean isLinkInSites(String link, SitesList sites) {
-        return  siteService.isLinkInSites(link, sites);
+    public boolean isLinkInSites(String link, List<SiteEntity> siteEntityList) {
+        return  siteService.isLinkInSiteEntityList(link, siteEntityList);
     }
 }

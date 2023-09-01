@@ -10,15 +10,12 @@ import searchengine.services.gradations.WordsService;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Gradation extends Thread {
     private final Page page;
     private final LemmaService lemmaService;
     private final IndexService indexService;
     private final WordsService wordsService;
-    public static AtomicInteger countTasks = new AtomicInteger();
-    public static AtomicInteger completedTasks = new AtomicInteger();
 
     public Gradation(
             Page page,

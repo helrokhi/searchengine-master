@@ -1,12 +1,11 @@
 package searchengine.services.search;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import searchengine.config.search.Item;
 import searchengine.config.search.Search;
-import searchengine.config.sites.Site;
-import searchengine.config.sites.SitesList;
 import searchengine.dto.search.DataResponse;
 import searchengine.dto.search.SearchResponse;
 import searchengine.model.PageEntity;
@@ -24,14 +23,15 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Service
+@Getter
 @RequiredArgsConstructor
 public class SearchService {
-    private final SitesList sites;
     private final SiteService siteService;
     private final PageService pageService;
     private final Search search;
     private ExecutorService service = Executors.newCachedThreadPool();
-    private List<DataResponse> dataResponses;
+    private List<DataResponse> dataResponses = new ArrayList<>(0);
+    private SearchResponse response;
 
     public SearchResponse getSearchResponse(
             String query,
@@ -41,97 +41,138 @@ public class SearchService {
         System.out.println("1. SearchService getSearchResponse" +
                 " siteService.getCountSites() - " + siteService.getCountSites() +
                 " \n query - " + query +
-                " \n offset '" + offset +
-                " \n limit '" + limit +
-                "'");
+                " \n offset " + offset +
+                " \n limit " + limit +
+                "");
+        if (offset == 0) dataResponses.clear();
+        if (dataResponses.isEmpty()) {
+            System.out.println(
+                    " Новый поиск." +
+                            "");
+            setResponse(query, url, offset, limit);
+        } else {
+            System.out.println(
+                    " Выборка из готового List<DataResponse> dataResponses." +
+                            " size - " + dataResponses.size() +
+                            "");
+            response = getNewSearchResponse(offset, limit);
+        }
 
-        SearchResponse response = new SearchResponse();
-
-        if (offset == null) offset = 0;
-        if (limit == null) limit = 20;
-
-        if (offset == 0) response = getSearchResponseByNewSearch(query, url, response);
-
-        response.setResult(true);
-        response.setCount(dataResponses.size());
-        if(!dataResponses.isEmpty()) response.setDataResponse(getDataResponses(offset, limit));
         System.out.println("2. SearchService getSearchResponse" +
                 " response " + response +
                 "");
         return response;
     }
 
-    private SearchResponse getSearchResponseByNewSearch(String query,
-                                                        String url,
-                                                        SearchResponse response) {
-        if (dataResponses != null) dataResponses.clear();
+    public void setResponse(String query,
+                            String url,
+                            Integer offset,
+                            Integer limit) {
+        List<SiteEntity> siteEntityList = siteService.findAll();
+        System.out.println("1. SearchService setResponse" +
+                " \n query - " + query +
+                " \n offset " + offset +
+                " \n limit " + limit +
+                "");
 
         if (query.isEmpty()) {
-            response.setResult(false);
-            response.setError("Задан пустой поисковый запрос");
-            return response;
+            response = getSearchResponseIfQueryIsEmpty();
+            return;
         }
 
         if (url != null) {
-            Site site = siteService.getSite(url, sites);
+            SiteEntity siteEntity = siteService.getSiteEntityByLink(url, siteEntityList);
             System.out.println(
-                    " site - " + site.getUrl() +
+                    " siteEntity - " + siteEntity.getUrl() +
                             "");
-            if (site == null) {
-                response.setResult(false);
-                response.setError("Сайт с этим путем не индексируется в нашем API. " +
-                        "Попробуйте другой путь.");
-
+            if (siteEntity == null) {
+                response = getSearchResponseIfSiteEntityIsNull();
             } else {
-                if (siteService.getSiteEntity(site).getStatus() == Status.INDEXING) {
-                    response.setResult(false);
-                    response.setError("Поиск невозможен. Идет индексация.");
-                    return response;
+                if (siteEntity.getStatus() == Status.INDEXING) {
+                    response = getSearchResponseIfSiteIsIndexing();
+                    return;
                 }
 
-                if (siteService.getSiteEntity(site).getStatus() == Status.FAILED) {
-                    response.setResult(false);
-                    response.setError("Поиск невозможен. Не выполнена индексация сайта.");
-                    return response;
+                if (siteEntity.getStatus() == Status.FAILED) {
+                    response = getSearchResponseIfSiteIsFailed();
+                    return;
                 }
 
-                List<Item> listItemBySite = getListItemBySite(query, site);
+                List<Item> listItemBySite = getListItemBySiteEntity(query, siteEntity);
                 if (!listItemBySite.isEmpty()) dataResponses = setDataResponses(listItemBySite);
+                response = getNewSearchResponse(offset, limit);
             }
+            return;
         } else {
             System.out.println(
                     "Поиск проводим по всем сайтам из списка." +
                             "");
 
             if (siteService.isIndexing()) {
-                response.setResult(false);
-                response.setError("Поиск невозможен. Идет индексация.");
-                return response;
+                response = getSearchResponseIfSiteIsIndexing();
+                return;
             }
             if (siteService.isFailed()) {
-                response.setResult(false);
-                response.setError("Поиск невозможен. Не выполнена индексация сайтов.");
-                return response;
+                response = getSearchResponseIfSiteIsFailed();
+                return;
             }
 
-            List<Item> listItemByAllSites = getListItemByAllSites(query);
+            List<Item> listItemByAllSites = getListItemByAllSites(query, siteEntityList);
             if (!listItemByAllSites.isEmpty()) dataResponses = setDataResponses(listItemByAllSites);
+            response = getNewSearchResponse(offset, limit);
         }
         System.out.println(
-                        " size - " + dataResponses.size() +
+                " size - " + dataResponses.size() +
                         "");
+    }
+
+    private SearchResponse getSearchResponseIfQueryIsEmpty() {
+        response = new SearchResponse();
+        response.setResult(false);
+        response.setError("Задан пустой поисковый запрос");
         return response;
     }
 
-    private List<Item> getListItemByAllSites(String query) {
+    private SearchResponse getSearchResponseIfSiteIsIndexing() {
+        response = new SearchResponse();
+        response.setResult(false);
+        response.setError("Поиск невозможен. Идет индексация.");
+        return response;
+    }
+
+    private SearchResponse getSearchResponseIfSiteIsFailed() {
+        response = new SearchResponse();
+        response.setResult(false);
+        response.setError("Поиск невозможен. Не выполнена индексация сайтов.");
+        return response;
+    }
+
+    private SearchResponse getSearchResponseIfSiteEntityIsNull() {
+        response = new SearchResponse();
+        response.setResult(false);
+        response.setError("Сайт с этим путем не индексируется в нашем API. " +
+                "Попробуйте другой путь.");
+        return response;
+    }
+
+    private SearchResponse getNewSearchResponse(Integer offset, Integer limit) {
+        response = new SearchResponse();
+        response.setResult(true);
+        response.setCount(dataResponses.size());
+        if (!dataResponses.isEmpty()) response.setDataResponse(getDataResponses(offset, limit));
+        return response;
+    }
+
+    private List<Item> getListItemByAllSites(String query, List<SiteEntity> siteEntityList) {
         List<Item> listItemByAllSites = new ArrayList<>(0);
-        sites.getSites()
-                .forEach(site -> listItemByAllSites.addAll(getListItemBySite(query, site)));
+        siteEntityList
+                .forEach(siteEntity -> listItemByAllSites
+                        .addAll(getListItemBySiteEntity(query, siteEntity)));
         return listItemByAllSites;
     }
 
-    private List<Item> getListItemBySite(String query, Site site) {
-        Future<List<Item>> future = service.submit(search.startScanning(query, site));
+    private List<Item> getListItemBySiteEntity(String query, SiteEntity siteEntity) {
+        Future<List<Item>> future = service.submit(search.startScanning(query, siteEntity));
         List<Item> listItemBySite;
         try {
             listItemBySite = future.get();

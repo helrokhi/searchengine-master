@@ -20,11 +20,6 @@ public interface LemmaRepository extends JpaRepository<LemmaEntity, Integer> {
     List<LemmaEntity> findByLemmas(int siteId, Collection<String> words);
 
     @Query(value =
-            "SELECT id FROM lemma " +
-                    "WHERE site_id= :siteId AND lemma IN :words", nativeQuery = true)
-    Collection<Integer> findAllLemmaIdInLemma(int siteId, Collection<String> words);
-
-    @Query(value =
             "SELECT lemma FROM lemma " +
                     "WHERE site_id= :siteId AND lemma IN :words", nativeQuery = true)
     Collection<String> findAllLemmaInLemma(int siteId, Collection<String> words);

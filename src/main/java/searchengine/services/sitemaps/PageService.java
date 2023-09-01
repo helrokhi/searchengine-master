@@ -2,8 +2,8 @@ package searchengine.services.sitemaps;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import searchengine.config.sites.Site;
 import searchengine.model.PageEntity;
+import searchengine.model.SiteEntity;
 import searchengine.repositories.PageRepository;
 
 import java.util.List;
@@ -32,9 +32,9 @@ public class PageService {
         return pageRepository.countAllPages();
     }
 
-    public int getCountAllPagesBySite(Site site) {
+    public int getCountAllPagesBySiteEntity(SiteEntity siteEntity) {
         return pageRepository
-                .countAllPagesBySiteId(siteService.getSiteEntity(site).getId());
+                .countAllPagesBySiteId(siteEntity.getId());
     }
 
     public void savePageEntity(PageEntity pageEntity) {
@@ -42,18 +42,17 @@ public class PageService {
         siteService.newStatusTime(siteService.getSiteById(pageEntity.getSiteId()));
     }
 
-    public List<Integer> getListPageIdBySite(Site site) {
-        int siteId = siteService.getSiteEntity(site).getId();
-        return (List<Integer>) pageRepository.findAllPagesIdBySiteId(siteId);
+    public List<Integer> getListPageIdBySiteEntity(SiteEntity siteEntity) {
+        return (List<Integer>) pageRepository.findAllPagesIdBySiteId(siteEntity.getId());
     }
 
-    public void deletePages(Site site) {
+    public void deletePages(SiteEntity siteEntity) {
         System.out.println("\tPageService deletePages" +
-                " site: " + site.getUrl() +
-                " count: " + getListPageIdBySite(site).size() +
-                " siteId: " + siteService.getSiteEntity(site).getId() +
+                " siteEntity: " + siteEntity.getUrl() +
+                " count: " + getListPageIdBySiteEntity(siteEntity).size() +
+                " siteId: " + siteEntity.getId() +
                 "");
-        pageRepository.deleteAllByIdInBatch(getListPageIdBySite(site));
+        pageRepository.deleteAllByIdInBatch(getListPageIdBySiteEntity(siteEntity));
     }
 
     public void deletePage(int pageId) {

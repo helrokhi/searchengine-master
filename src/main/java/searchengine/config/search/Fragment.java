@@ -16,6 +16,13 @@ public class Fragment {
         this.collectLemmas = collectLemmas;
     }
 
+    /**
+     * Метод создает сниппет (фрагмент текста, в котором найдены совпадения)
+     * для объекта класса Item
+     *
+     * @param item объект класса Item
+     * @return объект класса Snippet implements Callable<String> для выполнения задач параллельно
+     */
     public Snippet startSnippet(Item item) {
         return new Snippet(item, pageService, collectLemmas);
     }

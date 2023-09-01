@@ -18,7 +18,4 @@ public interface PageRepository extends JpaRepository<PageEntity, Integer> {
 
     @Query(value = "SELECT id FROM page WHERE site_id=?1", nativeQuery = true)
     Iterable<Integer> findAllPagesIdBySiteId(int siteId);
-
-    @Query(value = "SELECT id FROM page", nativeQuery = true)
-    Iterable<Integer> findAllPagesIdBySites();
 }

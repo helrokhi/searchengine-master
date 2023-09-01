@@ -16,7 +16,6 @@ public class IndexService {
     public void saveAllIndexEntity(List<IndexEntity> indexEntities) {
         if (!indexEntities.isEmpty()) {
             indexRepository.saveAll(indexEntities);
-            Gradation.completedTasks.incrementAndGet();
         }
     }
 

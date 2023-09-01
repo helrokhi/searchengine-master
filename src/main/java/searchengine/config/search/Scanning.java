@@ -3,6 +3,7 @@ package searchengine.config.search;
 import searchengine.config.gradations.CollectLemmas;
 import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
+import searchengine.model.SiteEntity;
 import searchengine.services.gradations.IndexService;
 import searchengine.services.gradations.LemmaService;
 import searchengine.services.sitemaps.PageService;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class Scanning implements Callable<List<Item>> {
     private final String query;
-    private final Site site;
+    private final SiteEntity siteEntity;
     private final SiteService siteService;
     private final PageService pageService;
     private final LemmaService lemmaService;
@@ -24,7 +25,7 @@ public class Scanning implements Callable<List<Item>> {
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public Scanning(
-            String query, Site site,
+            String query, SiteEntity siteEntity,
             SiteService siteService,
             PageService pageService,
             LemmaService lemmaService,
@@ -33,7 +34,7 @@ public class Scanning implements Callable<List<Item>> {
             Fragment fragment
     ) {
         this.query = query;
-        this.site = site;
+        this.siteEntity = siteEntity;
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -45,9 +46,12 @@ public class Scanning implements Callable<List<Item>> {
     @Override
     public List<Item> call(){
         Set<String> lemmaSet = getLemmaSet(query);
-        List<LemmaEntity> listOfUniqueLemmasBySite = getListOfUniqueLemmasBySite(lemmaSet, site);
-        List<LemmaEntity> sortedListOfLemmas = getSortedListOfLemmas(listOfUniqueLemmasBySite, site);
-        List<Integer> listPageIdBySite = getListPageIdBySortedListOfLemmas(sortedListOfLemmas, site);
+        List<LemmaEntity> listOfUniqueLemmasBySite =
+                getListOfUniqueLemmasBySite(lemmaSet, siteEntity);
+        List<LemmaEntity> sortedListOfLemmas =
+                getSortedListOfLemmas(listOfUniqueLemmasBySite, siteEntity);
+        List<Integer> listPageIdBySite =
+                getListPageIdBySortedListOfLemmas(sortedListOfLemmas, siteEntity);
 
         return getListItem(listPageIdBySite, sortedListOfLemmas);
     }
@@ -74,24 +78,35 @@ public class Scanning implements Callable<List<Item>> {
                 .collect(Collectors.toList());
     }
 
-    private List<LemmaEntity> getSortedListOfLemmas(List<LemmaEntity> list, Site site) {
-        int countPage = pageService.getCountAllPagesBySite(site);
+    private List<LemmaEntity> getSortedListOfLemmas(
+            List<LemmaEntity> list,
+            SiteEntity siteEntity)
+    {
+        int countPage = pageService.getCountAllPagesBySiteEntity(siteEntity);
         return list.stream()
                 .filter(lemmaEntity -> (isVariation(lemmaEntity.getFrequency(), countPage)))
                 .sorted(Comparator.comparing(LemmaEntity::getFrequency))
                 .collect(Collectors.toList());
     }
 
-    private List<LemmaEntity> getListOfUniqueLemmasBySite(Set<String> words, Site site) {
+    private List<LemmaEntity> getListOfUniqueLemmasBySite(
+            Set<String> words,
+            SiteEntity siteEntity
+    ) {
         return words
                 .stream()
-                .map(word -> lemmaService.findLemmaByLemmaAndSiteId(word, site))
+                .map(word -> lemmaService.findLemmaByLemmaAndSiteId(word, siteEntity))
                 .filter(lemmaEntity -> !Objects.equals(lemmaEntity, null))
                 .collect(Collectors.toList());
     }
 
-    private List<Integer> getListPageIdBySortedListOfLemmas(List<LemmaEntity> list, Site site) {
-        List<Integer> integers = (!list.isEmpty()) ? pageService.getListPageIdBySite(site) : new ArrayList<>(0);
+    private List<Integer> getListPageIdBySortedListOfLemmas(
+            List<LemmaEntity> list,
+            SiteEntity siteEntity) {
+        List<Integer> integers = (!list.isEmpty()) ?
+                pageService.getListPageIdBySiteEntity(siteEntity) :
+                new ArrayList<>(0);
+
         getLemmaIdList(list)
                 .forEach(lemmaId ->
                         integers.retainAll(indexService.getAllPageIdByLemmaId(lemmaId, integers)));

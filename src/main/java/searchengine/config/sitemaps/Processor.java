@@ -9,9 +9,9 @@ import searchengine.model.Status;
 import searchengine.services.sitemaps.*;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Getter
 public class Processor extends Thread implements Runnable {
@@ -23,7 +23,7 @@ public class Processor extends Thread implements Runnable {
     private PageService pageService;
     private RemoveService removeService;
     private ForkJoinPool forkJoinPool;
-    private ExecutorService service = Executors.newFixedThreadPool(1);
+    private ThreadPoolExecutor poolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
 
     public Processor(
             Site site,
@@ -78,7 +78,7 @@ public class Processor extends Thread implements Runnable {
         page.setSuffix("/");
         siteMapService.addLinks(page);
 
-        siteMap = new SiteMap(page, siteMapService, forkJoinPool, service);
+        siteMap = new SiteMap(page, siteMapService, forkJoinPool, poolExecutor);
 
         System.out.println(
                 "2. Processor run page:" +

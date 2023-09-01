@@ -6,32 +6,29 @@ import searchengine.services.sitemaps.SiteMapService;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
-
-import static searchengine.config.gradations.Gradation.completedTasks;
-import static searchengine.config.gradations.Gradation.countTasks;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Component
 public class SiteMap extends RecursiveAction {
     private Page page;
     private SiteMapService siteMapService;
     private ForkJoinPool forkJoinPool;
-    private ExecutorService service;
+    private ThreadPoolExecutor poolExecutor;
 
     @Autowired
     public SiteMap(
             Page page,
             SiteMapService siteMapService,
             ForkJoinPool forkJoinPool,
-            ExecutorService service
+            ThreadPoolExecutor poolExecutor
     ) {
         this.page = page;
         this.siteMapService = siteMapService;
         this.forkJoinPool = forkJoinPool;
-        this.service = service;
+        this.poolExecutor = poolExecutor;
     }
 
     @Override
@@ -43,7 +40,7 @@ public class SiteMap extends RecursiveAction {
         Set<SiteMap> subTasks = new HashSet<>();
         for (Page subPage : subPagesSet) {
             if (isRunning()) {
-                SiteMap task = new SiteMap(subPage, siteMapService, forkJoinPool, service);
+                SiteMap task = new SiteMap(subPage, siteMapService, forkJoinPool, poolExecutor);
                 task.fork();
                 subTasks.add(task);
             }
@@ -58,7 +55,7 @@ public class SiteMap extends RecursiveAction {
 
     private void savePage() {
         if (isRunning()) {
-            int queued = countTasks.get() - completedTasks.get();
+            int queued = poolExecutor.getQueue().size();
             try {
                 Thread.sleep(100 * queued);
             } catch (InterruptedException e) {
@@ -74,10 +71,9 @@ public class SiteMap extends RecursiveAction {
 
     private void submissions() {
         if (isRunning()) {
-            service.execute(siteMapService.startGradation(page));
-            countTasks.incrementAndGet();
+            poolExecutor.execute(siteMapService.startGradation(page));
         } else {
-            service.shutdown();
+            poolExecutor.shutdown();
         }
     }
 }

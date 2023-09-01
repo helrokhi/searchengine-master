@@ -10,6 +10,7 @@ import searchengine.dto.indexing.IndexResponse;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +19,7 @@ public class IndexingService {
     private final Indexing indexing;
     private final SiteService siteService;
     private static final Set<Processor> siteThreadSet = new HashSet<>(0);
-    private Processor thread;
-    private static boolean isStopped = false;
+    private final ThreadPoolExecutor fixedThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
 
     public IndexResponse getStartIndexingResponse() {
         System.out.println("1. IndexingService getStartIndexingResponse" +
@@ -28,16 +28,11 @@ public class IndexingService {
         IndexResponse response = new IndexResponse();
         if (siteService.isIndexing()) {
             response.setResult(false);
-            response.setError("Индексация уже запущена");
+            response.setError("Индексация уже запущена.");
         } else {
-            isStopped = false;
-            taskStart();
             response.setResult(true);
-            System.out.println("1.2 IndexingService getStartIndexingResponse" +
-                    " siteThreadSet " + (siteThreadSet.size()) +
-                    "");
+            taskStart();
         }
-
         System.out.println("2. IndexingService getStartIndexingResponse" +
                 " response " + response +
                 "");
@@ -51,7 +46,6 @@ public class IndexingService {
             response.setResult(false);
             response.setError("Индексация не запущена");
         } else {
-            isStopped = true;
             taskStop();
             response.setResult(true);
         }
@@ -63,57 +57,25 @@ public class IndexingService {
 
     private void taskStart() {
         for (Site site : sites.getSites()) {
-            if (!isStopped) {
-                Processor processor = indexing.startIndexing(site);
-
-                siteThreadSet.add(processor);
-                thread = processor;
-
-                processor.start();
-
-                System.out.println("\tIndexingService taskStart" +
-                        " site " + processor.getSite().getUrl() +
-                        " \n\tthread: " + thread.getName() +
-                        "");
-                try {
-                    processor.join();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            Processor processor = indexing.startIndexing(site);
+            siteThreadSet.add(processor);
+            fixedThreadPool.execute(processor);
         }
-        taskStartFinished();
-        clearSiteThreadSet();
-    }
-
-    private void taskStartFinished() {
-        siteThreadSet.forEach((processor) -> {
-            try {
-                processor.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            System.out.println("\tIndexingService taskStart Scan finished!" +
-                    " site " + processor.getSite().getUrl() +
-                    "");
-        });
     }
 
     private void taskStop() {
-        Thread task = indexing.stopIndexing(thread);
-        task.start();
+        siteThreadSet.forEach((processor) -> {
+            fixedThreadPool.remove(processor);
+            Thread task = indexing.stopIndexing(processor);
+            task.start();
 
-        try {
-            task.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        System.out.println("IndexingService taskStop" +
-                " site " + thread.getSite().getUrl() +
-                " \n\tprocessor " + thread.getName() +
-                " isAlive " + thread.isAlive() +
-                "");
+            try {
+                task.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        clearSiteThreadSet();
     }
 
     public static void clearSiteThreadSet() {

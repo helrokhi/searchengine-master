@@ -11,11 +11,17 @@ import searchengine.repositories.SiteRepository;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 @Service
 public class SiteService {
     @Autowired
     private SiteRepository siteRepository;
+
+    public List<SiteEntity> findAll() {
+        return siteRepository.findAll();
+    }
 
     public void saveSite(SiteEntity siteEntity) {
             siteRepository.save(siteEntity);
@@ -49,17 +55,17 @@ public class SiteService {
         return getSiteByUrl(site.getUrl());
     }
 
-    public Site getSite(String link, SitesList sites) {
-        for (Site site : sites.getSites()) {
-            if (link.startsWith(site.getUrl()) || site.getUrl().equals(link)) {
-                return site;
+    public SiteEntity getSiteEntityByLink(String link, List<SiteEntity> siteEntityList) {
+        for (SiteEntity siteEntity : siteEntityList) {
+            if (link.startsWith(siteEntity.getUrl()) || siteEntity.getUrl().equals(link)) {
+                return siteEntity;
             }
         }
         return null;
     }
 
-    public boolean isLinkInSites(String link, SitesList sites) {
-        return (getSite(link, sites) != null);
+    public boolean isLinkInSiteEntityList(String link, List<SiteEntity> siteEntityList) {
+        return (getSiteEntityByLink(link, siteEntityList) != null);
     }
 
     public void newStatusTime(SiteEntity siteEntity) {
@@ -77,7 +83,6 @@ public class SiteService {
         siteEntity.setLastError(pageResponse
                 .getException()
                 .getMessage());
-        siteEntity.setName("No name. Indexing failed.");
         newStatusTime(siteEntity);
     }
 
@@ -87,10 +92,10 @@ public class SiteService {
         newStatusTime(siteEntity);
     }
 
-    public void deleteSite(Site site) {
+    public void deleteSite(SiteEntity siteEntity) {
         System.out.println("\tSiteService deleteSite" +
-                " SiteEntity " + getSiteEntity(site).getUrl() +
+                " SiteEntity " + siteEntity.getUrl() +
                 "");
-        siteRepository.delete(getSiteEntity(site));
+        siteRepository.delete(siteEntity);
     }
 }

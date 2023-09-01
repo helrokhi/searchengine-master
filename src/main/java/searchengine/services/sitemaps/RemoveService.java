@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
+import searchengine.model.SiteEntity;
 import searchengine.services.gradations.WordsService;
 import searchengine.services.gradations.IndexService;
 import searchengine.services.gradations.LemmaService;
@@ -37,14 +38,15 @@ public class RemoveService {
     }
 
     public void deleteAll(Site site) {
-        if (siteService.getSiteEntity(site) != null) {
+        SiteEntity siteEntity = siteService.getSiteEntity(site);
+        if (siteEntity != null) {
             SiteMapService.clearLinksSet();
 
-            indexService.deleteAllIndex(pageService.getListPageIdBySite(site));
-            lemmaService.deleteLemmas(site);
+            indexService.deleteAllIndex(pageService.getListPageIdBySiteEntity(siteEntity));
+            lemmaService.deleteLemmas(siteEntity);
 
-            pageService.deletePages(site);
-            siteService.deleteSite(site);
+            pageService.deletePages(siteEntity);
+            siteService.deleteSite(siteEntity);
         }
     }
 
@@ -70,7 +72,7 @@ public class RemoveService {
     private List<Integer> getList(List<LemmaEntity> oldLemmaList) {
         return oldLemmaList.stream()
                 .filter(lemmaEntity -> lemmaEntity.getFrequency() == 1)
-                .map((lemmaEntity) -> lemmaEntity.getId())
+                .map(LemmaEntity::getId)
                 .collect(Collectors.toList());
     }
 }

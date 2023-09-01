@@ -7,5 +7,6 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StatisticsResponse {
     private boolean result;
+    private String error;
     private StatisticsData statistics;
 }
