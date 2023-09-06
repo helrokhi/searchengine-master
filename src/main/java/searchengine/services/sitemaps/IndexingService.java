@@ -19,7 +19,8 @@ public class IndexingService {
     private final Indexing indexing;
     private final SiteService siteService;
     private static final Set<Processor> siteThreadSet = new HashSet<>(0);
-    private final ThreadPoolExecutor fixedThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+    private final ThreadPoolExecutor fixedThreadPool =
+            (ThreadPoolExecutor) Executors.newFixedThreadPool(numberOfProcessorCores());
 
     public IndexResponse getStartIndexingResponse() {
         System.out.println("1. IndexingService getStartIndexingResponse" +
@@ -80,5 +81,9 @@ public class IndexingService {
 
     public static void clearSiteThreadSet() {
         siteThreadSet.clear();
+    }
+
+    private int numberOfProcessorCores() {
+        return Runtime.getRuntime().availableProcessors();
     }
 }

@@ -7,6 +7,7 @@ import searchengine.model.PageEntity;
 import searchengine.services.sitemaps.PageService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
@@ -19,6 +20,7 @@ public class Snippet implements Callable<String> {
     private final StringBuilder stringBuilder = new StringBuilder(0);
     private final static int MAX_STEP = 11;
     private final static int LIMIT_WORDS = 101;
+    private final static String WORD_REGEX = "[^\\p{L}\\p{N}+]";
 
     public Snippet(
             Item item,
@@ -42,11 +44,9 @@ public class Snippet implements Callable<String> {
         for (int i = 0; i < words.length; i++) {
             String word = words[i]
                     .toLowerCase(Locale.ROOT)
-                    .replaceAll("([^а-я\\s])", "");
-
+                    .replaceAll(WORD_REGEX, "");
             List<String> listWordLemma = collectLemmas.getAllWordForms(word);
             List<String> listLemma = getListLemmas();
-
             if (isWordInListOfLemmas(listLemma, listWordLemma)) {
                 integerList.add(i);
             }

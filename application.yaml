@@ -23,3 +23,5 @@ indexing-settings:
       name: Лента.ру
     - url: https://skillbox.ru
       name: Skillbox
+    - url: https://edition.cnn.com
+      name: edition.cnn

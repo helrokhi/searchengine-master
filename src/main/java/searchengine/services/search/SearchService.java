@@ -80,6 +80,11 @@ public class SearchService {
             return;
         }
 
+        if (siteEntityList.isEmpty()) {
+            response = getSearchResponseIfDBIsEmpty();
+            return;
+        }
+
         if (url != null) {
             SiteEntity siteEntity = siteService.getSiteEntityByLink(url, siteEntityList);
             System.out.println(
@@ -124,6 +129,13 @@ public class SearchService {
         System.out.println(
                 " size - " + dataResponses.size() +
                         "");
+    }
+
+    private SearchResponse getSearchResponseIfDBIsEmpty(){
+        response = new SearchResponse();
+        response.setResult(false);
+        response.setError("Поиск невозможен. База данных пустая.");
+        return response;
     }
 
     private SearchResponse getSearchResponseIfQueryIsEmpty() {
