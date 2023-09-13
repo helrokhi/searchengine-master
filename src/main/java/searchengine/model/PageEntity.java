@@ -22,7 +22,7 @@ public class PageEntity {
     @Column(name = "site_id", nullable = false)
     private int siteId; //ID веб-сайта из таблицы site;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String path; //адрес страницы от корня сайта
 
     @Column(nullable = false)
