@@ -1,12 +1,10 @@
 package searchengine.dto.search;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
 @Component
-@Getter
-@Setter
+@Data
 public class DataResponse {
     private String site;
     private String siteName;
@@ -14,9 +12,4 @@ public class DataResponse {
     private String title;
     private String snippet; //Фрагмент тека, в котором найдены совпадения, выделенные жирным.
     private float relevance;
-
-    //сравнить по релевантности
-    public static int compareByRelevance(DataResponse d1, DataResponse d2) {
-        return Float.compare(d2.getRelevance(), d1.getRelevance());
-    }
 }

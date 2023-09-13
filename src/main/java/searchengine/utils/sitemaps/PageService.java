@@ -1,4 +1,4 @@
-package searchengine.services.sitemaps;
+package searchengine.utils.sitemaps;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

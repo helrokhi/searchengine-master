@@ -7,10 +7,13 @@ import lombok.Setter;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "page") //проиндексированные страницы сайта
+@Table(name = "page",
+        indexes = @Index(name = "page_index", columnList = "path"))
+//проиндексированные страницы сайта
 @NoArgsConstructor
 @Getter
 @Setter
+
 public class PageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +22,7 @@ public class PageEntity {
     @Column(name = "site_id", nullable = false)
     private int siteId; //ID веб-сайта из таблицы site;
 
-    @Column(columnDefinition = "TEXT", nullable = false, unique = true)
+    @Column(nullable = false)
     private String path; //адрес страницы от корня сайта
 
     @Column(nullable = false)

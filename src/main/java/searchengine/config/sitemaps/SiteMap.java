@@ -2,7 +2,7 @@ package searchengine.config.sitemaps;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import searchengine.services.sitemaps.SiteMapService;
+import searchengine.utils.sitemaps.SiteMapService;
 
 import java.util.HashSet;
 import java.util.Set;

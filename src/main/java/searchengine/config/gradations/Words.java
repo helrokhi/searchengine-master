@@ -3,9 +3,9 @@ package searchengine.config.gradations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import searchengine.config.sitemaps.Page;
-import searchengine.services.gradations.WordsService;
-import searchengine.services.gradations.IndexService;
-import searchengine.services.gradations.LemmaService;
+import searchengine.utils.gradations.WordsService;
+import searchengine.utils.gradations.IndexService;
+import searchengine.utils.gradations.LemmaService;
 
 @Component
 public class Words {

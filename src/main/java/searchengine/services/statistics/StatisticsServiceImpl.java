@@ -7,9 +7,9 @@ import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.SiteEntity;
-import searchengine.services.gradations.LemmaService;
-import searchengine.services.sitemaps.PageService;
-import searchengine.services.sitemaps.SiteService;
+import searchengine.utils.gradations.LemmaService;
+import searchengine.utils.sitemaps.PageService;
+import searchengine.utils.sitemaps.SiteService;
 
 import java.util.ArrayList;
 import java.util.List;

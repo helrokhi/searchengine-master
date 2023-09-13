@@ -1,13 +1,11 @@
 package searchengine.config.search;
 
 import searchengine.config.gradations.CollectLemmas;
-import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
-import searchengine.services.gradations.IndexService;
-import searchengine.services.gradations.LemmaService;
-import searchengine.services.sitemaps.PageService;
-import searchengine.services.sitemaps.SiteService;
+import searchengine.utils.gradations.IndexService;
+import searchengine.utils.gradations.LemmaService;
+import searchengine.utils.sitemaps.PageService;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -16,7 +14,6 @@ import java.util.stream.Collectors;
 public class Scanning implements Callable<List<Item>> {
     private final String query;
     private final SiteEntity siteEntity;
-    private final SiteService siteService;
     private final PageService pageService;
     private final LemmaService lemmaService;
     private final IndexService indexService;
@@ -25,8 +22,8 @@ public class Scanning implements Callable<List<Item>> {
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public Scanning(
-            String query, SiteEntity siteEntity,
-            SiteService siteService,
+            String query,
+            SiteEntity siteEntity,
             PageService pageService,
             LemmaService lemmaService,
             IndexService indexService,
@@ -35,7 +32,6 @@ public class Scanning implements Callable<List<Item>> {
     ) {
         this.query = query;
         this.siteEntity = siteEntity;
-        this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
         this.indexService = indexService;
@@ -44,7 +40,7 @@ public class Scanning implements Callable<List<Item>> {
     }
 
     @Override
-    public List<Item> call(){
+    public List<Item> call() {
         Set<String> lemmaSet = getLemmaSet(query);
         List<LemmaEntity> listOfUniqueLemmasBySite =
                 getListOfUniqueLemmasBySite(lemmaSet, siteEntity);
@@ -52,8 +48,9 @@ public class Scanning implements Callable<List<Item>> {
                 getSortedListOfLemmas(listOfUniqueLemmasBySite, siteEntity);
         List<Integer> listPageIdBySite =
                 getListPageIdBySortedListOfLemmas(sortedListOfLemmas, siteEntity);
-
-        return getListItem(listPageIdBySite, sortedListOfLemmas);
+        return !listPageIdBySite.isEmpty() ?
+                getListItem(listPageIdBySite, sortedListOfLemmas) :
+                new ArrayList<>(0);
     }
 
     private Set<String> getLemmaSet(String text) {
@@ -61,7 +58,7 @@ public class Scanning implements Callable<List<Item>> {
     }
 
     private double getCoefficientOfVariation(int frequency, int countPage) {
-        double average = (countPage + frequency) / 2;
+        double average = (double) (countPage + frequency) / 2;
         double meanSquareDeviation =
                 Math.sqrt(
                         Math.pow((countPage - average), 2) + Math.pow((frequency - average), 2));
@@ -72,16 +69,9 @@ public class Scanning implements Callable<List<Item>> {
         return getCoefficientOfVariation(frequency, countPage) > 33;
     }
 
-    private List<Integer> getLemmaIdList(List<LemmaEntity> list) {
-        return list.stream()
-                .map(LemmaEntity::getId)
-                .collect(Collectors.toList());
-    }
-
     private List<LemmaEntity> getSortedListOfLemmas(
             List<LemmaEntity> list,
-            SiteEntity siteEntity)
-    {
+            SiteEntity siteEntity) {
         int countPage = pageService.getCountAllPagesBySiteEntity(siteEntity);
         return list.stream()
                 .filter(lemmaEntity -> (isVariation(lemmaEntity.getFrequency(), countPage)))
@@ -107,7 +97,7 @@ public class Scanning implements Callable<List<Item>> {
                 pageService.getListPageIdBySiteEntity(siteEntity) :
                 new ArrayList<>(0);
 
-        getLemmaIdList(list)
+        lemmaService.getLemmaIdListByLemmaEntityList(list)
                 .forEach(lemmaId ->
                         integers.retainAll(indexService.getAllPageIdByLemmaId(lemmaId, integers)));
         return integers;
@@ -115,32 +105,45 @@ public class Scanning implements Callable<List<Item>> {
 
     private List<Item> getListItem(List<Integer> listPageId,
                                    List<LemmaEntity> lemmaEntities) {
+        List<Item> listItem = new ArrayList<>(0);
+        List<Item> itemListFromDataBase = getItemListFromDataBase(listPageId, lemmaEntities);
+
+        float maxRelevance = itemListFromDataBase
+                .stream()
+                .max(Comparator.comparing(Item::getCountRank))
+                .map(Item::getCountRank).orElse(0F);
+
+        for (Item item : itemListFromDataBase) {
+            item.setRelevance(item.getCountRank() / maxRelevance);
+            FutureTask<String> futureTask = new FutureTask<>(fragment.startSnippet(item));
+            executorService.execute(futureTask);
+
+            try {
+                item.setSnippet(futureTask.get());
+                if (!item.getSnippet().isEmpty()) listItem.add(item);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return listItem;
+    }
+
+    private List<Item> getItemListFromDataBase(List<Integer> listPageId,
+                                               List<LemmaEntity> lemmaEntities) {
+        List<Integer> lemmaIdList =
+                lemmaService.getLemmaIdListByLemmaEntityList(lemmaEntities);
+
         List<Item> itemList = new ArrayList<>(0);
-        if (!listPageId.isEmpty()) {
-            listPageId.forEach(pageId -> {
-                Item item = new Item();
-                item.setPageId(pageId);
-                item.setLemmaEntities(lemmaEntities);
-                item.setCountRank(indexService.countRank(pageId, getLemmaIdList(lemmaEntities)));
-                itemList.add(item);
-            });
 
-            float maxRelevance = itemList
-                    .stream()
-                    .map(Item::getCountRank)
-                    .max(Float::compareTo)
-                    .get();
+        List<Object[]> objects =
+                indexService.getListFromPageIdAndCountRank(listPageId, lemmaIdList);
 
-            itemList.forEach(item -> {
-                item.setRelevance(item.getCountRank() / maxRelevance);
-                Future<String> future = executorService.submit(fragment.startSnippet(item));
-
-                try {
-                    item.setSnippet(future.get());
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+        for (Object[] o : objects) {
+            Item item = new Item();
+            item.setPageId((int) o[0]);
+            item.setLemmaEntities(lemmaEntities);
+            item.setCountRank((float) ((double) o[1]));
+            itemList.add(item);
         }
         return itemList;
     }

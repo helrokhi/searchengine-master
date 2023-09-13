@@ -9,10 +9,10 @@ import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.services.sitemaps.PageService;
-import searchengine.services.sitemaps.RemoveService;
-import searchengine.services.sitemaps.SiteMapService;
-import searchengine.services.sitemaps.SiteService;
+import searchengine.utils.sitemaps.PageService;
+import searchengine.utils.sitemaps.RemoveService;
+import searchengine.utils.sitemaps.SiteMapService;
+import searchengine.utils.sitemaps.SiteService;
 
 import java.util.List;
 

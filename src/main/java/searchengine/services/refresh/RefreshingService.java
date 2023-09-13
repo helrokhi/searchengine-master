@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import searchengine.config.refresh.Refreshing;
 import searchengine.dto.indexing.IndexResponse;
 import searchengine.model.SiteEntity;
-import searchengine.services.sitemaps.SiteService;
+import searchengine.utils.sitemaps.SiteService;
 
 import java.util.List;
 

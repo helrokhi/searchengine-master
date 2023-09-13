@@ -1,11 +1,11 @@
-package searchengine.services.gradations;
+package searchengine.utils.gradations;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import searchengine.config.gradations.Gradation;
 import searchengine.model.IndexEntity;
 import searchengine.repositories.IndexRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -39,7 +39,7 @@ public class IndexService {
         return indexRepository.getAllPageIdByLemmaId(lemmaId, listPageIdInSite);
     }
 
-    public float countRank(int pageId, List<Integer> listLemmaId) {
-        return indexRepository.countRank(pageId, listLemmaId);
+    public List<Object[]> getListFromPageIdAndCountRank(List<Integer> listPageId, List<Integer> listLemmaId) {
+        return indexRepository.getListFromPageIdAndCountRank(listPageId, listLemmaId);
     }
 }

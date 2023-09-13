@@ -7,6 +7,7 @@ import searchengine.config.sitemaps.Processor;
 import searchengine.config.sites.Site;
 import searchengine.config.sites.SitesList;
 import searchengine.dto.indexing.IndexResponse;
+import searchengine.utils.sitemaps.SiteService;
 
 import java.util.HashSet;
 import java.util.Set;

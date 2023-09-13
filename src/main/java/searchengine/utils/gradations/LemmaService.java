@@ -1,16 +1,16 @@
-package searchengine.services.gradations;
+package searchengine.utils.gradations;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.config.sitemaps.Page;
-import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repositories.LemmaRepository;
-import searchengine.services.sitemaps.SiteService;
+import searchengine.utils.sitemaps.SiteService;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class LemmaService {
@@ -90,5 +90,11 @@ public class LemmaService {
         System.out.println("\tLemmaService deleteLemmasByPage" +
                 " page " + page.getLink() +
                 "");
+    }
+
+    public List<Integer> getLemmaIdListByLemmaEntityList(List<LemmaEntity> list) {
+        return list.stream()
+                .map(LemmaEntity::getId)
+                .collect(Collectors.toList());
     }
 }

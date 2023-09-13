@@ -3,7 +3,7 @@ package searchengine.config.sitemaps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import searchengine.config.sites.Site;
-import searchengine.services.sitemaps.*;
+import searchengine.utils.sitemaps.*;
 
 import java.util.concurrent.ForkJoinPool;
 

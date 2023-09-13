@@ -11,15 +11,12 @@ import searchengine.dto.search.SearchResponse;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.Status;
-import searchengine.services.sitemaps.PageService;
-import searchengine.services.sitemaps.SiteService;
+import searchengine.utils.sitemaps.PageService;
+import searchengine.utils.sitemaps.SiteService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,7 +27,7 @@ public class SearchService {
     private final PageService pageService;
     private final Search search;
     private ExecutorService service = Executors.newCachedThreadPool();
-    private List<DataResponse> dataResponses = new ArrayList<>(0);
+    private List<Item> sortedItemList = new ArrayList<>(0);
     private SearchResponse response;
 
     public SearchResponse getSearchResponse(
@@ -44,16 +41,16 @@ public class SearchService {
                 " \n offset " + offset +
                 " \n limit " + limit +
                 "");
-        if (offset == 0) dataResponses.clear();
-        if (dataResponses.isEmpty()) {
+        if (offset == 0) sortedItemList.clear();
+        if (sortedItemList.isEmpty()) {
             System.out.println(
                     " Новый поиск." +
                             "");
             setResponse(query, url, offset, limit);
         } else {
             System.out.println(
-                    " Выборка из готового List<DataResponse> dataResponses." +
-                            " size - " + dataResponses.size() +
+                    " Выборка из готового List<Item> sortedItemList." +
+                            " size - " + sortedItemList.size() +
                             "");
             response = getNewSearchResponse(offset, limit);
         }
@@ -70,9 +67,9 @@ public class SearchService {
                             Integer limit) {
         List<SiteEntity> siteEntityList = siteService.findAll();
         System.out.println("1. SearchService setResponse" +
-                " \n query - " + query +
-                " \n offset " + offset +
-                " \n limit " + limit +
+                " query - " + query +
+                " offset " + offset +
+                " limit " + limit +
                 "");
 
         if (query.isEmpty()) {
@@ -104,7 +101,7 @@ public class SearchService {
                 }
 
                 List<Item> listItemBySite = getListItemBySiteEntity(query, siteEntity);
-                if (!listItemBySite.isEmpty()) dataResponses = setDataResponses(listItemBySite);
+                if (!listItemBySite.isEmpty()) sortedItemList = getSortedItemList(listItemBySite);
                 response = getNewSearchResponse(offset, limit);
             }
             return;
@@ -123,15 +120,15 @@ public class SearchService {
             }
 
             List<Item> listItemByAllSites = getListItemByAllSites(query, siteEntityList);
-            if (!listItemByAllSites.isEmpty()) dataResponses = setDataResponses(listItemByAllSites);
+            if (!listItemByAllSites.isEmpty()) sortedItemList = getSortedItemList(listItemByAllSites);
             response = getNewSearchResponse(offset, limit);
         }
         System.out.println(
-                " size - " + dataResponses.size() +
+                " size - " + sortedItemList.size() +
                         "");
     }
 
-    private SearchResponse getSearchResponseIfDBIsEmpty(){
+    private SearchResponse getSearchResponseIfDBIsEmpty() {
         response = new SearchResponse();
         response.setResult(false);
         response.setError("Поиск невозможен. База данных пустая.");
@@ -170,16 +167,18 @@ public class SearchService {
     private SearchResponse getNewSearchResponse(Integer offset, Integer limit) {
         response = new SearchResponse();
         response.setResult(true);
-        response.setCount(dataResponses.size());
-        if (!dataResponses.isEmpty()) response.setDataResponse(getDataResponses(offset, limit));
+        response.setCount(sortedItemList.size());
+        if (!sortedItemList.isEmpty()) response.setDataResponse(getDataResponses(offset, limit));
         return response;
     }
 
     private List<Item> getListItemByAllSites(String query, List<SiteEntity> siteEntityList) {
         List<Item> listItemByAllSites = new ArrayList<>(0);
-        siteEntityList
-                .forEach(siteEntity -> listItemByAllSites
-                        .addAll(getListItemBySiteEntity(query, siteEntity)));
+
+        for (SiteEntity siteEntity : siteEntityList) {
+            listItemByAllSites
+                    .addAll(getListItemBySiteEntity(query, siteEntity));
+        }
         return listItemByAllSites;
     }
 
@@ -199,7 +198,7 @@ public class SearchService {
 
         List<DataResponse> responseList = new ArrayList<>();
 
-        itemList.forEach(item -> {
+        for (Item item : itemList) {
             PageEntity pageEntity = pageService.getPageById(item.getPageId());
             SiteEntity siteEntity = siteService.getSiteById(pageEntity.getSiteId());
 
@@ -211,23 +210,30 @@ public class SearchService {
             dataResponse.setSnippet(item.getSnippet());
             dataResponse.setRelevance(item.getRelevance());
             responseList.add(dataResponse);
-        });
-
-        return responseList
-                .stream()
-                .sorted(DataResponse::compareByRelevance)
-                .collect(Collectors.toList());
+        }
+        return responseList;
     }
 
     private List<DataResponse> getDataResponses(Integer offset, Integer limit) {
-        return dataResponses
-                .stream()
-                .skip(offset)
-                .limit(limit)
-                .collect(Collectors.toList());
+        return setDataResponses(getSortedItemListFromOffsetToLimit(offset, limit));
     }
 
     private String getTitlePage(String content) {
         return Jsoup.parse(content).getElementsByTag("title").text();
+    }
+
+    private List<Item> getSortedItemList(List<Item> itemList) {
+        return itemList
+                .stream()
+                .sorted(Item::compareByRelevance)
+                .collect(Collectors.toList());
+    }
+
+    private List<Item> getSortedItemListFromOffsetToLimit(Integer offset, Integer limit) {
+        return sortedItemList
+                .stream()
+                .skip(offset)
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 }

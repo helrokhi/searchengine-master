@@ -1,4 +1,4 @@
-package searchengine.services.sitemaps;
+package searchengine.utils.sitemaps;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -6,9 +6,9 @@ import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
-import searchengine.services.gradations.WordsService;
-import searchengine.services.gradations.IndexService;
-import searchengine.services.gradations.LemmaService;
+import searchengine.utils.gradations.WordsService;
+import searchengine.utils.gradations.IndexService;
+import searchengine.utils.gradations.LemmaService;
 
 import java.util.Collection;
 import java.util.List;

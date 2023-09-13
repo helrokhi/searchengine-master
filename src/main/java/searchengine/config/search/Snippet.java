@@ -4,10 +4,9 @@ import org.jsoup.Jsoup;
 import searchengine.config.gradations.CollectLemmas;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
-import searchengine.services.sitemaps.PageService;
+import searchengine.utils.sitemaps.PageService;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;

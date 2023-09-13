@@ -1,4 +1,4 @@
-package searchengine.services.gradations;
+package searchengine.utils.gradations;
 
 import lombok.Getter;
 import lombok.Setter;

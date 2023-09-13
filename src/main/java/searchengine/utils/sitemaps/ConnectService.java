@@ -1,4 +1,4 @@
-package searchengine.services.sitemaps;
+package searchengine.utils.sitemaps;
 
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;

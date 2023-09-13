@@ -1,8 +1,7 @@
 package searchengine.model;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import javax.persistence.*;
 
@@ -11,8 +10,7 @@ import javax.persistence.*;
         indexes = @Index(name = "lemma_index", columnList = "site_id, lemma", unique = true))
 //леммы, встречающиеся в текстах
 @NoArgsConstructor
-@Getter
-@Setter
+@Data
 
 public class LemmaEntity {
     @Id

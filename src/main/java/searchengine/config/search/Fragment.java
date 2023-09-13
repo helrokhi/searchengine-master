@@ -3,7 +3,7 @@ package searchengine.config.search;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import searchengine.config.gradations.CollectLemmas;
-import searchengine.services.sitemaps.PageService;
+import searchengine.utils.sitemaps.PageService;
 
 @Component
 public class Fragment {

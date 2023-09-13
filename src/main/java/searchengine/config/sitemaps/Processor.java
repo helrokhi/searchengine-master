@@ -6,7 +6,7 @@ import searchengine.config.sites.Site;
 import searchengine.dto.sites.PageResponse;
 import searchengine.model.SiteEntity;
 import searchengine.model.Status;
-import searchengine.services.sitemaps.*;
+import searchengine.utils.sitemaps.*;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.Executors;
@@ -95,6 +95,7 @@ public class Processor extends Thread implements Runnable {
 
         if (!isInterrupted()) {
             siteEntity.setStatus(Status.INDEXED);
+            siteEntity.setLastError(null);
             siteService.saveSite(siteEntity);
 
             System.out.println("Processor run End of scanning" +

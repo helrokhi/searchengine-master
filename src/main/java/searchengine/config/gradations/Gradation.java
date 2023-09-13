@@ -3,9 +3,9 @@ package searchengine.config.gradations;
 import searchengine.config.sitemaps.Page;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
-import searchengine.services.gradations.IndexService;
-import searchengine.services.gradations.LemmaService;
-import searchengine.services.gradations.WordsService;
+import searchengine.utils.gradations.IndexService;
+import searchengine.utils.gradations.LemmaService;
+import searchengine.utils.gradations.WordsService;
 
 import java.util.Collection;
 import java.util.List;

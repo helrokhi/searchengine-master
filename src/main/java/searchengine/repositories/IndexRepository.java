@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import searchengine.model.IndexEntity;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -20,7 +21,10 @@ public interface IndexRepository extends JpaRepository<IndexEntity, Integer> {
     List<Integer> getAllPageIdByLemmaId(int lemmaId, List<Integer> listPageIdInSite);
 
     @Query(value =
-            "SELECT SUM(`rank`) FROM `index` " +
-                    "WHERE page_id= :pageId AND lemma_id IN :listLemmaId", nativeQuery = true)
-    float countRank(int pageId, List<Integer> listLemmaId);
+            "SELECT page_id, " +
+                    "SUM(`rank`) " +
+                    "FROM `index` " +
+                    "WHERE page_id IN :listPageId AND lemma_id IN :listLemmaId " +
+                    "GROUP BY page_id" , nativeQuery = true)
+    List<Object[]> getListFromPageIdAndCountRank(List<Integer> listPageId, List<Integer> listLemmaId);
 }
