@@ -1,9 +1,10 @@
-package searchengine.config.gradations;
+package searchengine.utils.gradations;
 
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import searchengine.config.gradations.CollectLemmasInterface;
 
 import java.io.IOException;
 import java.util.*;
@@ -15,7 +16,7 @@ public class CollectRuLemmas implements CollectLemmasInterface {
     private final static String RU_SYMBOL = "([^а-я\\s])";
     private final static String RU_WORD = "[а-я]+";
 
-    @Autowired
+    //@Autowired
     public CollectRuLemmas() {
         this.russianLuceneMorphology = russianLuceneMorphology();
     }

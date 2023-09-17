@@ -1,11 +1,9 @@
 package searchengine.dto.sites;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.jsoup.nodes.Document;
 
-@Getter
-@Setter
+@Data
 public class PageResponse {
     private Document document;
     private Exception exception;

@@ -1,11 +1,8 @@
 package searchengine.config.sites;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.stereotype.Component;
+import lombok.Data;
 
-@Setter
-@Getter
+@Data
 public class Site {
     private String url;
     private String name;

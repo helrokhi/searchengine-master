@@ -1,20 +1,15 @@
-package searchengine.config.gradations;
+package searchengine.utils.gradations;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class CollectLemmas {
     private final CollectRuLemmas collectRuLemmas;
     private final CollectEnLemmas collectEnLemmas;
-
-    @Autowired
-    public CollectLemmas(CollectRuLemmas collectRuLemmas, CollectEnLemmas collectEnLemmas) {
-        this.collectRuLemmas = collectRuLemmas;
-        this.collectEnLemmas = collectEnLemmas;
-    }
 
     public Map<String, Integer> collectLemmas(String text) {
         Map<String, Integer> lemmas = new HashMap<>(collectRuLemmas.collectLemmas(text));

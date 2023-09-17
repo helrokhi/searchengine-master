@@ -1,49 +1,39 @@
 package searchengine.config.gradations;
 
+import lombok.AllArgsConstructor;
 import searchengine.config.sitemaps.Page;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
-import searchengine.utils.gradations.IndexService;
-import searchengine.utils.gradations.LemmaService;
-import searchengine.utils.gradations.WordsService;
+import searchengine.utils.gradations.GradationCollectLemmas;
+import searchengine.utils.methods.Methods;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@AllArgsConstructor
 public class Gradation extends Thread {
     private final Page page;
-    private final LemmaService lemmaService;
-    private final IndexService indexService;
-    private final WordsService wordsService;
-
-    public Gradation(
-            Page page,
-            LemmaService lemmaService,
-            IndexService indexService,
-            WordsService wordsService) {
-        this.page = page;
-        this.lemmaService = lemmaService;
-        this.indexService = indexService;
-        this.wordsService = wordsService;
-    }
+    private final Methods methods;
+    private final GradationCollectLemmas gradationCollectLemmas;
 
     @Override
     public void run() {
-        Map<String, Integer> wordsMap = wordsService.getLemmasMap(page);
+        Map<String, Integer> wordsMap = gradationCollectLemmas.getLemmasMap(page);
         Collection<String> words = wordsMap.keySet();
-        List<LemmaEntity> oldLemmaList = wordsService.getOldLemmaList(page.getSiteId(), words);
-        Collection<String> lemmas = wordsService.getLemmas(page.getSiteId(), words);
+        List<LemmaEntity> oldLemmaList = gradationCollectLemmas.getOldLemmaList(page.getSiteId(), words);
+        Collection<String> lemmas = gradationCollectLemmas.getLemmas(page.getSiteId(), words);
 
-        lemmaService.incrementFrequencyAllLemmasEntity(oldLemmaList);
+        methods.incrementFrequencyAllLemmasEntity(oldLemmaList);
 
-        List<LemmaEntity> newLemmaList;
+        List<LemmaEntity> newLemmaList = new ArrayList<>(0);
         if (words.size() > oldLemmaList.size()) {
-            newLemmaList = wordsService.getNewLemmaList(page, wordsMap, lemmas);
-            lemmaService.saveAllNewLemmas(newLemmaList);
+            newLemmaList = gradationCollectLemmas.getNewLemmaList(page, wordsMap, lemmas);
+            methods.saveAllNewLemmas(newLemmaList);
         }
 
-        List<IndexEntity> indexList = wordsService.getIndexList(page, wordsMap);
-        indexService.saveAllIndexEntity(indexList);
+        List<IndexEntity> indexList = gradationCollectLemmas.getIndexList(page, wordsMap);
+        methods.saveAllIndexEntity(indexList);
     }
 }

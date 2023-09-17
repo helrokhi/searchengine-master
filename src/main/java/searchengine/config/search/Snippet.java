@@ -1,10 +1,11 @@
 package searchengine.config.search;
 
 import org.jsoup.Jsoup;
-import searchengine.config.gradations.CollectLemmas;
+import searchengine.utils.gradations.CollectLemmas;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
-import searchengine.utils.sitemaps.PageService;
+import searchengine.utils.methods.Methods;
+import searchengine.utils.search.DataItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +14,8 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 public class Snippet implements Callable<String> {
-    private final Item item;
-    private final PageService pageService;
+    private final DataItem dataItem;
+    private final Methods methods;
     private final CollectLemmas collectLemmas;
     private final StringBuilder stringBuilder = new StringBuilder(0);
     private final static int MAX_STEP = 11;
@@ -22,18 +23,18 @@ public class Snippet implements Callable<String> {
     private final static String WORD_REGEX = "[^\\p{L}\\p{N}+]";
 
     public Snippet(
-            Item item,
-            PageService pageService,
+            DataItem dataItem,
+            Methods methods,
             CollectLemmas collectLemmas
     ) {
-        this.item = item;
-        this.pageService = pageService;
+        this.dataItem = dataItem;
+        this.methods = methods;
         this.collectLemmas = collectLemmas;
     }
 
     @Override
     public String call() {
-        PageEntity pageEntity = pageService.getPageById(item.getPageId());
+        PageEntity pageEntity = methods.getPageById(dataItem.getPageId());
         String content = pageEntity.getContent();
         String[] words = getBodyPage(content)
                 .trim()
@@ -107,7 +108,7 @@ public class Snippet implements Callable<String> {
     }
 
     private List<String> getListLemmas() {
-        return item.getLemmaEntities()
+        return dataItem.getLemmaEntities()
                 .stream()
                 .map(LemmaEntity::getLemma)
                 .collect(Collectors.toList());

@@ -1,4 +1,4 @@
-package searchengine.config.search;
+package searchengine.utils.search;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.List;
 @Component
 @Data
 @NoArgsConstructor
-public class Item {
+public class DataItem {
     private int pageId;
     private List<LemmaEntity> lemmaEntities;
     private float countRank;
@@ -18,7 +18,7 @@ public class Item {
     private String snippet;
 
     //сравнить по релевантности
-    public static int compareByRelevance(Item item1, Item item2) {
-        return Float.compare(item2.getRelevance(), item1.getRelevance());
+    public static int compareByRelevance(DataItem dataItem1, DataItem dataItem2) {
+        return Float.compare(dataItem2.getRelevance(), dataItem1.getRelevance());
     }
 }

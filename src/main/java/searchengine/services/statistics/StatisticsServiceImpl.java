@@ -7,9 +7,7 @@ import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.SiteEntity;
-import searchengine.utils.gradations.LemmaService;
-import searchengine.utils.sitemaps.PageService;
-import searchengine.utils.sitemaps.SiteService;
+import searchengine.utils.methods.Methods;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,24 +15,22 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
-    private final SiteService siteService;
-    private final PageService pageService;
-    private final LemmaService lemmaService;
+    private final Methods methods;
 
     @Override
     public StatisticsResponse getStatistics() {
         System.out.println("1. StatisticsServiceImpl getStatistics" +
-                " siteService.getCountSites() - " + siteService.getCountSites() +
+                " siteService.getCountSites() - " + methods.getCountSites() +
                 "");
         StatisticsResponse response = new StatisticsResponse();
-        List<SiteEntity> siteEntityList = siteService.findAll();
+        List<SiteEntity> siteEntityList = methods.findAllSiteEntities();
 
         if (siteEntityList.isEmpty()) {
             response.setResult(false);
             response.setError("База данных пустая. Проведите индексацию сайтов.");
         } else {
             TotalStatistics total = new TotalStatistics();
-            total.setSites(siteService.getCountSites());
+            total.setSites(methods.getCountSites());
             total.setIndexing(true);
 
             List<DetailedStatisticsItem> detailed = new ArrayList<>();
@@ -43,14 +39,14 @@ public class StatisticsServiceImpl implements StatisticsService {
                 DetailedStatisticsItem item = new DetailedStatisticsItem();
                 item.setName(siteEntity.getName());
                 item.setUrl(siteEntity.getUrl());
-                item.setPages(pageService.getCountAllPagesBySiteEntity(siteEntity));
-                item.setLemmas(lemmaService.getCountLemmasBySiteEntity(siteEntity));
+                item.setPages(methods.getCountAllPagesBySiteEntity(siteEntity));
+                item.setLemmas(methods.getCountLemmasBySiteEntity(siteEntity));
                 item.setStatus(siteEntity.getStatus().toString());
                 item.setError(siteEntity.getLastError());
                 item.setStatusTime(siteEntity.getStatusTime());
 
-                total.setPages(pageService.getCountPages());
-                total.setLemmas(lemmaService.getCountLemmas());
+                total.setPages(methods.getCountPages());
+                total.setLemmas(methods.getCountLemmas());
                 detailed.add(item);
             }
             StatisticsData data = new StatisticsData();

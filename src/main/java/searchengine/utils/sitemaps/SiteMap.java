@@ -6,39 +6,33 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import searchengine.config.gradations.Gradation;
-import searchengine.config.gradations.Words;
+import searchengine.utils.gradations.Gradations;
 import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.dto.sites.PageResponse;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
+import searchengine.utils.methods.Methods;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@Service
+@Component
 @Getter
 @Setter
-public class SiteMapService {
-    private ConnectService connectService;
-    private SiteService siteService;
-    private PageService pageService;
+public class SiteMap {
+    private JsoupConnect jsoupConnect;
+    private Methods methods;
     private static final Set<String> linksSet = new HashSet<>(0);
-    private Words words;
+    private Gradations gradations;
 
     @Autowired
-    public SiteMapService(
-            ConnectService connectService,
-            SiteService siteService,
-            PageService pageService,
-            Words words
-    ) {
-        this.connectService = connectService;
-        this.siteService = siteService;
-        this.pageService = pageService;
-        this.words = words;
+    public SiteMap(JsoupConnect jsoupConnect, Methods methods, Gradations gradations) {
+        this.jsoupConnect = jsoupConnect;
+        this.methods = methods;
+        this.gradations = gradations;
     }
 
     public void addLinks(Page page) {
@@ -52,7 +46,7 @@ public class SiteMapService {
 
     public PageEntity setPageEntity(Page page) {
         PageEntity pageEntity = new PageEntity();
-        PageResponse pageResponse = connectService.getPageResponse(page.getLink());
+        PageResponse pageResponse = jsoupConnect.getPageResponse(page.getLink());
 
         Document document = pageResponse.getDocument();
 
@@ -61,8 +55,8 @@ public class SiteMapService {
         pageEntity.setCode(pageResponse.getCode());
 
         if (document == null) {
-            SiteEntity siteEntity = siteService.getSiteEntity(page.getSite());
-            siteService.newLastError(siteEntity, pageResponse);
+            SiteEntity siteEntity = methods.getSiteEntity(page.getSite());
+            methods.newLastError(siteEntity, pageResponse);
             pageEntity.setContent("");
 
             System.out.println(
@@ -87,12 +81,12 @@ public class SiteMapService {
         Site site = page.getSite();
         int id = page.getSiteId();
 
-        PageResponse pageResponse = connectService.getPageResponse(link);
+        PageResponse pageResponse = jsoupConnect.getPageResponse(link);
         Document document = pageResponse.getDocument();
 
         if (document == null) {
-            SiteEntity siteEntity = siteService.getSiteEntity(site);
-            siteService.newLastError(siteEntity, pageResponse);
+            SiteEntity siteEntity = methods.getSiteEntity(site);
+            methods.newLastError(siteEntity, pageResponse);
         } else {
             Elements elements = document.select("a[href]");
             for (Element element : elements) {
@@ -110,18 +104,18 @@ public class SiteMapService {
 
     public void savePage(Page page) {
         PageEntity pageEntity = setPageEntity(page);
-        pageService.savePageEntity(pageEntity);
+        methods.savePageEntity(pageEntity);
         page.setPageId(pageEntity.getId());
     }
 
     public static void clearLinksSet() {
-        System.out.println("\tSiteMapService clearLinksSet" +
+        System.out.println("\tSiteMap clearLinksSet" +
                 " linksSet.size() " + linksSet.size() +
                 "");
         linksSet.clear();
     }
 
     public Gradation startGradation(Page page) {
-        return words.startGradation(page);
+        return gradations.startGradation(page);
     }
 }

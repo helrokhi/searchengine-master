@@ -6,6 +6,7 @@ import searchengine.config.sites.Site;
 import searchengine.dto.sites.PageResponse;
 import searchengine.model.SiteEntity;
 import searchengine.model.Status;
+import searchengine.utils.methods.Methods;
 import searchengine.utils.sitemaps.*;
 
 import java.time.LocalDateTime;
@@ -16,32 +17,28 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Getter
 public class Processor extends Thread implements Runnable {
     private Site site;
+    private SiteMapRecursive siteMapRecursive;
     private SiteMap siteMap;
-    private SiteMapService siteMapService;
-    private ConnectService connectService;
-    private SiteService siteService;
-    private PageService pageService;
-    private RemoveService removeService;
+    private JsoupConnect jsoupConnect;
+    private Methods methods;
+    private Remove remove;
     private ForkJoinPool forkJoinPool;
     private ThreadPoolExecutor poolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
 
     public Processor(
             Site site,
+            SiteMapRecursive siteMapRecursive,
             SiteMap siteMap,
-            SiteMapService siteMapService,
-            ConnectService connectService,
-            SiteService siteService,
-            PageService pageService,
-            RemoveService removeService,
+            JsoupConnect jsoupConnect,
+            Methods methods, Remove remove,
             ForkJoinPool forkJoinPool
     ) {
         this.site = site;
+        this.siteMapRecursive = siteMapRecursive;
         this.siteMap = siteMap;
-        this.siteMapService = siteMapService;
-        this.connectService = connectService;
-        this.siteService = siteService;
-        this.pageService = pageService;
-        this.removeService = removeService;
+        this.jsoupConnect = jsoupConnect;
+        this.methods =methods;
+        this.remove = remove;
         this.forkJoinPool = forkJoinPool;
     }
 
@@ -51,12 +48,12 @@ public class Processor extends Thread implements Runnable {
                 " site: " + site.getUrl() +
                 "");
 
-        removeService.deleteAll(site);
+        remove.deleteAll(site);
 
         String siteUrl = site.getUrl();
         String siteName = site.getName();
 
-        PageResponse pageResponse = connectService.getPageResponse(siteUrl);
+        PageResponse pageResponse = jsoupConnect.getPageResponse(siteUrl);
         Document document = pageResponse.getDocument();
 
         SiteEntity siteEntity = new SiteEntity();
@@ -66,19 +63,19 @@ public class Processor extends Thread implements Runnable {
         siteEntity.setName(siteName);
 
         if (document == null) {
-            siteService.setStatusFailed(siteEntity, pageResponse);
+            methods.setStatusFailed(siteEntity, pageResponse);
             return;
         }
 
         siteEntity.setStatus(Status.INDEXING);
-        siteService.saveSite(siteEntity);
+        methods.saveSite(siteEntity);
 
         Page page = new Page(siteUrl, siteUrl, site);
         page.setSiteId(siteEntity.getId());
         page.setSuffix("/");
-        siteMapService.addLinks(page);
+        siteMap.addLinks(page);
 
-        siteMap = new SiteMap(page, siteMapService, forkJoinPool, poolExecutor);
+        siteMapRecursive = new SiteMapRecursive(page, siteMap, forkJoinPool, poolExecutor);
 
         System.out.println(
                 "2. Processor run page:" +
@@ -89,14 +86,14 @@ public class Processor extends Thread implements Runnable {
                         " suffix " + page.getSuffix() +
                         "");
 
-        forkJoinPool.invoke(siteMap);
+        forkJoinPool.invoke(siteMapRecursive);
 
-        siteEntity = siteService.getSiteEntity(site);
+        siteEntity = methods.getSiteEntity(site);
 
         if (!isInterrupted()) {
             siteEntity.setStatus(Status.INDEXED);
-            siteEntity.setLastError(null);
-            siteService.saveSite(siteEntity);
+            siteEntity.setLastError("");
+            methods.saveSite(siteEntity);
 
             System.out.println("Processor run End of scanning" +
                     " site " + siteUrl +
@@ -104,7 +101,7 @@ public class Processor extends Thread implements Runnable {
         } else {
             getForkJoinPool().shutdownNow();
             if (siteEntity != null && siteEntity.getStatus().equals(Status.INDEXING)) {
-                siteService.setStopStatusFailed(siteEntity);
+                methods.setStopStatusFailed(siteEntity);
             }
             System.out.println("Processor run STOP of scanning" +
                     " site " + siteUrl +

@@ -1,8 +1,8 @@
-package searchengine.config.sitemaps;
+package searchengine.utils.sitemaps;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import searchengine.utils.sitemaps.SiteMapService;
+import searchengine.config.sitemaps.Page;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -12,21 +12,21 @@ import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Component
-public class SiteMap extends RecursiveAction {
+public class SiteMapRecursive extends RecursiveAction {
     private Page page;
-    private SiteMapService siteMapService;
+    private SiteMap siteMap;
     private ForkJoinPool forkJoinPool;
     private ThreadPoolExecutor poolExecutor;
 
     @Autowired
-    public SiteMap(
+    public SiteMapRecursive(
             Page page,
-            SiteMapService siteMapService,
+            SiteMap siteMap,
             ForkJoinPool forkJoinPool,
             ThreadPoolExecutor poolExecutor
     ) {
         this.page = page;
-        this.siteMapService = siteMapService;
+        this.siteMap = siteMap;
         this.forkJoinPool = forkJoinPool;
         this.poolExecutor = poolExecutor;
     }
@@ -37,10 +37,10 @@ public class SiteMap extends RecursiveAction {
         Set<Page> subPagesSet = getSubPagesSet();
         submissions();
 
-        Set<SiteMap> subTasks = new HashSet<>();
+        Set<SiteMapRecursive> subTasks = new HashSet<>();
         for (Page subPage : subPagesSet) {
             if (isRunning()) {
-                SiteMap task = new SiteMap(subPage, siteMapService, forkJoinPool, poolExecutor);
+                SiteMapRecursive task = new SiteMapRecursive(subPage, siteMap, forkJoinPool, poolExecutor);
                 task.fork();
                 subTasks.add(task);
             }
@@ -49,7 +49,7 @@ public class SiteMap extends RecursiveAction {
     }
 
     private Set<Page> getSubPagesSet() {
-        siteMapService.subPagesSet(page);
+        siteMap.subPagesSet(page);
         return isRunning() ? page.getSubPages() : new HashSet<>(0);
     }
 
@@ -57,11 +57,11 @@ public class SiteMap extends RecursiveAction {
         if (isRunning()) {
             int queued = poolExecutor.getQueue().size();
             try {
-                Thread.sleep(100 * queued);
+                Thread.sleep(150L * queued);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            siteMapService.savePage(page);
+            siteMap.savePage(page);
         }
     }
 
@@ -71,7 +71,7 @@ public class SiteMap extends RecursiveAction {
 
     private void submissions() {
         if (isRunning()) {
-            poolExecutor.execute(siteMapService.startGradation(page));
+            poolExecutor.execute(siteMap.startGradation(page));
         } else {
             poolExecutor.shutdown();
         }

@@ -1,34 +1,23 @@
 package searchengine.utils.gradations;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import searchengine.config.gradations.CollectLemmas;
+import org.springframework.stereotype.Component;
 import searchengine.config.sitemaps.Page;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
+import searchengine.utils.methods.Methods;
 
 import java.util.*;
 
-@Service
+@Component
+@RequiredArgsConstructor
 @Getter
 @Setter
-public class WordsService {
+public class GradationCollectLemmas {
     private final CollectLemmas collectLemmas;
-    private final LemmaService lemmaService;
-    private final IndexService indexService;
-
-    @Autowired
-    public WordsService(
-            CollectLemmas collectLemmas,
-            LemmaService lemmaService,
-            IndexService indexService
-    ) {
-        this.collectLemmas = collectLemmas;
-        this.lemmaService = lemmaService;
-        this.indexService = indexService;
-    }
+    private final Methods methods;
 
     private Map<String, Integer> getCollectLemmas(String text) {
         return collectLemmas.collectLemmas(text);
@@ -58,7 +47,7 @@ public class WordsService {
     public List<IndexEntity> getIndexList(Page page, Map<String, Integer> wordsMap) {
         List<IndexEntity> list = new ArrayList<>(0);
         wordsMap.forEach((key, value) -> {
-            int lemmaId = lemmaService.findLemmaIdByLemmaAndSiteId(key, page.getSiteId());
+            int lemmaId = methods.findLemmaIdByLemmaAndSiteId(key, page.getSiteId());
             IndexEntity indexEntity = new IndexEntity();
             indexEntity.setPageId(page.getPageId());
             indexEntity.setLemmaId(lemmaId);
@@ -69,10 +58,10 @@ public class WordsService {
     }
 
     public List<LemmaEntity> getOldLemmaList(int siteId, Collection<String> words) {
-        return lemmaService.getAllLemmasEntity(siteId, words);
+        return methods.getAllLemmasEntity(siteId, words);
     }
 
     public Collection<String> getLemmas(int siteId, Collection<String> words) {
-        return lemmaService.getAllLemmas(siteId, words);
+        return methods.getAllLemmas(siteId, words);
     }
 }

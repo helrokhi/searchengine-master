@@ -1,46 +1,39 @@
 package searchengine.config.search;
 
-import searchengine.config.gradations.CollectLemmas;
+import searchengine.utils.gradations.CollectLemmas;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
-import searchengine.utils.gradations.IndexService;
-import searchengine.utils.gradations.LemmaService;
-import searchengine.utils.sitemaps.PageService;
+import searchengine.utils.methods.Methods;
+import searchengine.utils.search.DataItem;
+import searchengine.utils.search.Fragment;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class Scanning implements Callable<List<Item>> {
+public class Scanning implements Callable<List<DataItem>> {
     private final String query;
     private final SiteEntity siteEntity;
-    private final PageService pageService;
-    private final LemmaService lemmaService;
-    private final IndexService indexService;
+    private final Methods methods;
     private final CollectLemmas collectLemmas;
-    private Fragment fragment;
+    private final Fragment fragment;
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public Scanning(
             String query,
             SiteEntity siteEntity,
-            PageService pageService,
-            LemmaService lemmaService,
-            IndexService indexService,
-            CollectLemmas collectLemmas,
+            Methods methods, CollectLemmas collectLemmas,
             Fragment fragment
     ) {
         this.query = query;
         this.siteEntity = siteEntity;
-        this.pageService = pageService;
-        this.lemmaService = lemmaService;
-        this.indexService = indexService;
+        this.methods = methods;
         this.collectLemmas = collectLemmas;
         this.fragment = fragment;
     }
 
     @Override
-    public List<Item> call() {
+    public List<DataItem> call() {
         Set<String> lemmaSet = getLemmaSet(query);
         List<LemmaEntity> listOfUniqueLemmasBySite =
                 getListOfUniqueLemmasBySite(lemmaSet, siteEntity);
@@ -72,7 +65,7 @@ public class Scanning implements Callable<List<Item>> {
     private List<LemmaEntity> getSortedListOfLemmas(
             List<LemmaEntity> list,
             SiteEntity siteEntity) {
-        int countPage = pageService.getCountAllPagesBySiteEntity(siteEntity);
+        int countPage = methods.getCountAllPagesBySiteEntity(siteEntity);
         return list.stream()
                 .filter(lemmaEntity -> (isVariation(lemmaEntity.getFrequency(), countPage)))
                 .sorted(Comparator.comparing(LemmaEntity::getFrequency))
@@ -85,7 +78,7 @@ public class Scanning implements Callable<List<Item>> {
     ) {
         return words
                 .stream()
-                .map(word -> lemmaService.findLemmaByLemmaAndSiteId(word, siteEntity))
+                .map(word -> methods.findLemmaByLemmaAndSiteId(word, siteEntity))
                 .filter(lemmaEntity -> !Objects.equals(lemmaEntity, null))
                 .collect(Collectors.toList());
     }
@@ -94,57 +87,57 @@ public class Scanning implements Callable<List<Item>> {
             List<LemmaEntity> list,
             SiteEntity siteEntity) {
         List<Integer> integers = (!list.isEmpty()) ?
-                pageService.getListPageIdBySiteEntity(siteEntity) :
+                methods.getListPageIdBySiteEntity(siteEntity) :
                 new ArrayList<>(0);
 
-        lemmaService.getLemmaIdListByLemmaEntityList(list)
+        methods.getLemmaIdListByLemmaEntityList(list)
                 .forEach(lemmaId ->
-                        integers.retainAll(indexService.getAllPageIdByLemmaId(lemmaId, integers)));
+                        integers.retainAll(methods.getAllPageIdByLemmaId(lemmaId, integers)));
         return integers;
     }
 
-    private List<Item> getListItem(List<Integer> listPageId,
-                                   List<LemmaEntity> lemmaEntities) {
-        List<Item> listItem = new ArrayList<>(0);
-        List<Item> itemListFromDataBase = getItemListFromDataBase(listPageId, lemmaEntities);
+    private List<DataItem> getListItem(List<Integer> listPageId,
+                                       List<LemmaEntity> lemmaEntities) {
+        List<DataItem> listDataItem = new ArrayList<>(0);
+        List<DataItem> dataItemListFromDataBase = getItemListFromDataBase(listPageId, lemmaEntities);
 
-        float maxRelevance = itemListFromDataBase
+        float maxRelevance = dataItemListFromDataBase
                 .stream()
-                .max(Comparator.comparing(Item::getCountRank))
-                .map(Item::getCountRank).orElse(0F);
+                .max(Comparator.comparing(DataItem::getCountRank))
+                .map(DataItem::getCountRank).orElse(0F);
 
-        for (Item item : itemListFromDataBase) {
-            item.setRelevance(item.getCountRank() / maxRelevance);
-            FutureTask<String> futureTask = new FutureTask<>(fragment.startSnippet(item));
+        for (DataItem dataItem : dataItemListFromDataBase) {
+            dataItem.setRelevance(dataItem.getCountRank() / maxRelevance);
+            FutureTask<String> futureTask = new FutureTask<>(fragment.startSnippet(dataItem));
             executorService.execute(futureTask);
 
             try {
-                item.setSnippet(futureTask.get());
-                if (!item.getSnippet().isEmpty()) listItem.add(item);
+                dataItem.setSnippet(futureTask.get());
+                if (!dataItem.getSnippet().isEmpty()) listDataItem.add(dataItem);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }
-        return listItem;
+        return listDataItem;
     }
 
-    private List<Item> getItemListFromDataBase(List<Integer> listPageId,
-                                               List<LemmaEntity> lemmaEntities) {
+    private List<DataItem> getItemListFromDataBase(List<Integer> listPageId,
+                                                   List<LemmaEntity> lemmaEntities) {
         List<Integer> lemmaIdList =
-                lemmaService.getLemmaIdListByLemmaEntityList(lemmaEntities);
+                methods.getLemmaIdListByLemmaEntityList(lemmaEntities);
 
-        List<Item> itemList = new ArrayList<>(0);
+        List<DataItem> dataItemList = new ArrayList<>(0);
 
         List<Object[]> objects =
-                indexService.getListFromPageIdAndCountRank(listPageId, lemmaIdList);
+                methods.getListFromPageIdAndCountRank(listPageId, lemmaIdList);
 
         for (Object[] o : objects) {
-            Item item = new Item();
-            item.setPageId((int) o[0]);
-            item.setLemmaEntities(lemmaEntities);
-            item.setCountRank((float) ((double) o[1]));
-            itemList.add(item);
+            DataItem dataItem = new DataItem();
+            dataItem.setPageId((int) o[0]);
+            dataItem.setLemmaEntities(lemmaEntities);
+            dataItem.setCountRank((float) ((double) o[1]));
+            dataItemList.add(dataItem);
         }
-        return itemList;
+        return dataItemList;
     }
 }

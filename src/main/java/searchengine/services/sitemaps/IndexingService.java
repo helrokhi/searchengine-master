@@ -2,12 +2,13 @@ package searchengine.services.sitemaps;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import searchengine.config.sitemaps.Indexing;
+import searchengine.utils.sitemaps.Indexing;
 import searchengine.config.sitemaps.Processor;
 import searchengine.config.sites.Site;
 import searchengine.config.sites.SitesList;
 import searchengine.dto.indexing.IndexResponse;
-import searchengine.utils.sitemaps.SiteService;
+import searchengine.utils.methods.Methods;
+import searchengine.utils.sitemaps.SiteMap;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,17 +19,17 @@ import java.util.concurrent.*;
 public class IndexingService {
     private final SitesList sites;
     private final Indexing indexing;
-    private final SiteService siteService;
+    private final Methods methods;
     private static final Set<Processor> siteThreadSet = new HashSet<>(0);
     private final ThreadPoolExecutor fixedThreadPool =
             (ThreadPoolExecutor) Executors.newFixedThreadPool(numberOfProcessorCores());
 
     public IndexResponse getStartIndexingResponse() {
         System.out.println("1. IndexingService getStartIndexingResponse" +
-                " siteService.getCountSites() - " + siteService.getCountSites() +
+                " siteService.getCountSites() - " + methods.getCountSites() +
                 "");
         IndexResponse response = new IndexResponse();
-        if (siteService.isIndexing()) {
+        if (methods.isIndexing()) {
             response.setResult(false);
             response.setError("Индексация уже запущена.");
         } else {
@@ -44,7 +45,7 @@ public class IndexingService {
     public IndexResponse getStopIndexingResponse() {
         System.out.println("1. IndexingService getStopIndexingResponse");
         IndexResponse response = new IndexResponse();
-        if (!siteService.isIndexing()) {
+        if (!methods.isIndexing()) {
             response.setResult(false);
             response.setError("Индексация не запущена");
         } else {
@@ -58,6 +59,9 @@ public class IndexingService {
     }
 
     private void taskStart() {
+        clearSiteThreadSet();
+        SiteMap.clearLinksSet();
+
         for (Site site : sites.getSites()) {
             Processor processor = indexing.startIndexing(site);
             siteThreadSet.add(processor);
@@ -77,7 +81,6 @@ public class IndexingService {
                 throw new RuntimeException(e);
             }
         });
-        clearSiteThreadSet();
     }
 
     public static void clearSiteThreadSet() {

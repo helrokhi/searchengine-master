@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import searchengine.model.IndexEntity;
 
-import java.util.Collection;
 import java.util.List;
 
 @Repository
