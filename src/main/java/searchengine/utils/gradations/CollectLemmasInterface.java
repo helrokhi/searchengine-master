@@ -1,4 +1,4 @@
-package searchengine.config.gradations;
+package searchengine.utils.gradations;
 
 import org.apache.lucene.morphology.LuceneMorphology;
 

@@ -4,10 +4,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
-import searchengine.config.sitemaps.Page;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
+import searchengine.utils.sitemaps.Page;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
-import searchengine.utils.methods.Methods;
+import searchengine.repositories.LemmaRepository;
 
 import java.util.*;
 
@@ -17,7 +19,9 @@ import java.util.*;
 @Setter
 public class GradationCollectLemmas {
     private final CollectLemmas collectLemmas;
-    private final Methods methods;
+    private final LemmaRepository lemmaRepository;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
 
     private Map<String, Integer> getCollectLemmas(String text) {
         return collectLemmas.collectLemmas(text);
@@ -47,7 +51,7 @@ public class GradationCollectLemmas {
     public List<IndexEntity> getIndexList(Page page, Map<String, Integer> wordsMap) {
         List<IndexEntity> list = new ArrayList<>(0);
         wordsMap.forEach((key, value) -> {
-            int lemmaId = methods.findLemmaIdByLemmaAndSiteId(key, page.getSiteId());
+            int lemmaId = lemmaRepository.getLemmaId(key, page.getSiteId());
             IndexEntity indexEntity = new IndexEntity();
             indexEntity.setPageId(page.getPageId());
             indexEntity.setLemmaId(lemmaId);
@@ -55,13 +59,5 @@ public class GradationCollectLemmas {
             list.add(indexEntity);
         });
         return list;
-    }
-
-    public List<LemmaEntity> getOldLemmaList(int siteId, Collection<String> words) {
-        return methods.getAllLemmasEntity(siteId, words);
-    }
-
-    public Collection<String> getLemmas(int siteId, Collection<String> words) {
-        return methods.getAllLemmas(siteId, words);
     }
 }

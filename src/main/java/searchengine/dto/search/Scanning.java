@@ -1,9 +1,11 @@
-package searchengine.config.search;
+package searchengine.dto.search;
 
+import searchengine.repositories.IndexRepository;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
 import searchengine.utils.gradations.CollectLemmas;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
-import searchengine.utils.methods.Methods;
 import searchengine.utils.search.DataItem;
 import searchengine.utils.search.Fragment;
 
@@ -14,7 +16,9 @@ import java.util.stream.Collectors;
 public class Scanning implements Callable<List<DataItem>> {
     private final String query;
     private final SiteEntity siteEntity;
-    private final Methods methods;
+    private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
+    private final IndexRepository indexRepository;
     private final CollectLemmas collectLemmas;
     private final Fragment fragment;
     private ExecutorService executorService = Executors.newCachedThreadPool();
@@ -22,12 +26,17 @@ public class Scanning implements Callable<List<DataItem>> {
     public Scanning(
             String query,
             SiteEntity siteEntity,
-            Methods methods, CollectLemmas collectLemmas,
+            PageRepository pageRepository,
+            LemmaRepository lemmaRepository,
+            IndexRepository indexRepository,
+            CollectLemmas collectLemmas,
             Fragment fragment
     ) {
         this.query = query;
         this.siteEntity = siteEntity;
-        this.methods = methods;
+        this.pageRepository = pageRepository;
+        this.lemmaRepository = lemmaRepository;
+        this.indexRepository = indexRepository;
         this.collectLemmas = collectLemmas;
         this.fragment = fragment;
     }
@@ -65,7 +74,8 @@ public class Scanning implements Callable<List<DataItem>> {
     private List<LemmaEntity> getSortedListOfLemmas(
             List<LemmaEntity> list,
             SiteEntity siteEntity) {
-        int countPage = methods.getCountAllPagesBySiteEntity(siteEntity);
+        int countPage = pageRepository
+                .countAllPagesBySiteId(siteEntity.getId());
         return list.stream()
                 .filter(lemmaEntity -> (isVariation(lemmaEntity.getFrequency(), countPage)))
                 .sorted(Comparator.comparing(LemmaEntity::getFrequency))
@@ -74,11 +84,10 @@ public class Scanning implements Callable<List<DataItem>> {
 
     private List<LemmaEntity> getListOfUniqueLemmasBySite(
             Set<String> words,
-            SiteEntity siteEntity
-    ) {
+            SiteEntity siteEntity) {
         return words
                 .stream()
-                .map(word -> methods.findLemmaByLemmaAndSiteId(word, siteEntity))
+                .map(word -> lemmaRepository.findByLemma(word, siteEntity.getId()))
                 .filter(lemmaEntity -> !Objects.equals(lemmaEntity, null))
                 .collect(Collectors.toList());
     }
@@ -87,12 +96,14 @@ public class Scanning implements Callable<List<DataItem>> {
             List<LemmaEntity> list,
             SiteEntity siteEntity) {
         List<Integer> integers = (!list.isEmpty()) ?
-                methods.getListPageIdBySiteEntity(siteEntity) :
+                (List<Integer>) pageRepository.findAllPagesIdBySiteId(siteEntity.getId()) :
                 new ArrayList<>(0);
 
-        methods.getLemmaIdListByLemmaEntityList(list)
+        getLemmaIdListByLemmaEntityList(list)
                 .forEach(lemmaId ->
-                        integers.retainAll(methods.getAllPageIdByLemmaId(lemmaId, integers)));
+                        integers.retainAll(
+                                indexRepository.getAllPageIdByLemmaId(lemmaId, integers)
+                        ));
         return integers;
     }
 
@@ -124,12 +135,12 @@ public class Scanning implements Callable<List<DataItem>> {
     private List<DataItem> getItemListFromDataBase(List<Integer> listPageId,
                                                    List<LemmaEntity> lemmaEntities) {
         List<Integer> lemmaIdList =
-                methods.getLemmaIdListByLemmaEntityList(lemmaEntities);
+                getLemmaIdListByLemmaEntityList(lemmaEntities);
 
         List<DataItem> dataItemList = new ArrayList<>(0);
 
         List<Object[]> objects =
-                methods.getListFromPageIdAndCountRank(listPageId, lemmaIdList);
+                indexRepository.getListFromPageIdAndCountRank(listPageId, lemmaIdList);
 
         for (Object[] o : objects) {
             DataItem dataItem = new DataItem();
@@ -139,5 +150,11 @@ public class Scanning implements Callable<List<DataItem>> {
             dataItemList.add(dataItem);
         }
         return dataItemList;
+    }
+
+    private List<Integer> getLemmaIdListByLemmaEntityList(List<LemmaEntity> list) {
+        return list.stream()
+                .map(LemmaEntity::getId)
+                .collect(Collectors.toList());
     }
 }

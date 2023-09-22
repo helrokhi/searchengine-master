@@ -1,12 +1,13 @@
-package searchengine.config.sitemaps;
+package searchengine.dto.sitemaps;
 
 import lombok.Getter;
 import org.jsoup.nodes.Document;
+import searchengine.utils.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.dto.sites.PageResponse;
 import searchengine.model.SiteEntity;
 import searchengine.model.Status;
-import searchengine.utils.methods.Methods;
+import searchengine.repositories.SiteRepository;
 import searchengine.utils.sitemaps.*;
 
 import java.time.LocalDateTime;
@@ -20,24 +21,26 @@ public class Processor extends Thread implements Runnable {
     private SiteMapRecursive siteMapRecursive;
     private SiteMap siteMap;
     private JsoupConnect jsoupConnect;
-    private Methods methods;
+    private SiteRepository siteRepository;
     private Remove remove;
     private ForkJoinPool forkJoinPool;
-    private ThreadPoolExecutor poolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+    private ThreadPoolExecutor poolExecutor =
+            (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+    private static final String STOP_MESSAGE = "Индексация остановлена пользователем";
 
     public Processor(
             Site site,
             SiteMapRecursive siteMapRecursive,
             SiteMap siteMap,
             JsoupConnect jsoupConnect,
-            Methods methods, Remove remove,
+            SiteRepository siteRepository, Remove remove,
             ForkJoinPool forkJoinPool
     ) {
         this.site = site;
         this.siteMapRecursive = siteMapRecursive;
         this.siteMap = siteMap;
         this.jsoupConnect = jsoupConnect;
-        this.methods =methods;
+        this.siteRepository = siteRepository;
         this.remove = remove;
         this.forkJoinPool = forkJoinPool;
     }
@@ -59,16 +62,14 @@ public class Processor extends Thread implements Runnable {
         SiteEntity siteEntity = new SiteEntity();
 
         siteEntity.setUrl(siteUrl);
-        siteEntity.setStatusTime(LocalDateTime.now());
         siteEntity.setName(siteName);
 
         if (document == null) {
-            methods.setStatusFailed(siteEntity, pageResponse);
+            setStatus(siteEntity, Status.FAILED, pageResponse.getException().getMessage());
             return;
         }
 
-        siteEntity.setStatus(Status.INDEXING);
-        methods.saveSite(siteEntity);
+        setStatus(siteEntity, Status.INDEXING, null);
 
         Page page = new Page(siteUrl, siteUrl, site);
         page.setSiteId(siteEntity.getId());
@@ -88,24 +89,28 @@ public class Processor extends Thread implements Runnable {
 
         forkJoinPool.invoke(siteMapRecursive);
 
-        siteEntity = methods.getSiteEntity(site);
+        siteEntity = siteRepository.findSiteByUrl(siteUrl);
 
         if (!isInterrupted()) {
-            siteEntity.setStatus(Status.INDEXED);
-            siteEntity.setLastError("");
-            methods.saveSite(siteEntity);
-
+            setStatus(siteEntity, Status.INDEXED,"");
             System.out.println("Processor run End of scanning" +
                     " site " + siteUrl +
                     "");
         } else {
             getForkJoinPool().shutdownNow();
             if (siteEntity != null && siteEntity.getStatus().equals(Status.INDEXING)) {
-                methods.setStopStatusFailed(siteEntity);
+                setStatus(siteEntity, Status.FAILED, STOP_MESSAGE);
             }
             System.out.println("Processor run STOP of scanning" +
                     " site " + siteUrl +
                     "");
         }
+    }
+
+    private void setStatus(SiteEntity siteEntity, Status status, String lastError) {
+        siteEntity.setStatus(status);
+        siteEntity.setLastError(lastError);
+        siteEntity.setStatusTime(LocalDateTime.now());
+        siteRepository.save(siteEntity);
     }
 }

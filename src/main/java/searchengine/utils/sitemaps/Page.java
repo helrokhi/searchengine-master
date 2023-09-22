@@ -1,4 +1,4 @@
-package searchengine.config.sitemaps;
+package searchengine.utils.sitemaps;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

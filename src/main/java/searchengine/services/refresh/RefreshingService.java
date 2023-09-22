@@ -2,10 +2,10 @@ package searchengine.services.refresh;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import searchengine.repositories.SiteRepository;
 import searchengine.utils.refresh.Refreshing;
 import searchengine.dto.indexing.IndexResponse;
 import searchengine.model.SiteEntity;
-import searchengine.utils.methods.Methods;
 
 import java.util.List;
 
@@ -13,10 +13,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RefreshingService {
     private final Refreshing refreshing;
-    private final Methods methods;
+    private final SiteRepository siteRepository;
 
     public IndexResponse getIndexPageResponse(String url) {
-        List<SiteEntity> siteEntityList = methods.findAllSiteEntities();
+        List<SiteEntity> siteEntityList = siteRepository.findAll();
         System.out.println("1. RefreshingService getIndexPageResponse" +
                 " url " + url +
                 " isLinkInSites " + (refreshing.isLinkInSites(url, siteEntityList)) +

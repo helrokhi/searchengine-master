@@ -7,15 +7,16 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import searchengine.config.gradations.Gradation;
+import searchengine.dto.gradations.Gradation;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 import searchengine.utils.gradations.Gradations;
-import searchengine.config.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.dto.sites.PageResponse;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.utils.methods.Methods;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,14 +25,18 @@ import java.util.Set;
 @Setter
 public class SiteMap {
     private JsoupConnect jsoupConnect;
-    private Methods methods;
+    private SiteRepository siteRepository;
+    private PageRepository pageRepository;
     private static final Set<String> linksSet = new HashSet<>(0);
     private Gradations gradations;
 
     @Autowired
-    public SiteMap(JsoupConnect jsoupConnect, Methods methods, Gradations gradations) {
+    public SiteMap(JsoupConnect jsoupConnect,
+                   SiteRepository siteRepository, PageRepository pageRepository,
+                   Gradations gradations) {
         this.jsoupConnect = jsoupConnect;
-        this.methods = methods;
+        this.siteRepository = siteRepository;
+        this.pageRepository = pageRepository;
         this.gradations = gradations;
     }
 
@@ -55,8 +60,8 @@ public class SiteMap {
         pageEntity.setCode(pageResponse.getCode());
 
         if (document == null) {
-            SiteEntity siteEntity = methods.getSiteEntity(page.getSite());
-            methods.newLastError(siteEntity, pageResponse);
+            SiteEntity siteEntity = siteRepository.findSiteByUrl(page.getSite().getUrl());
+            newLastError(siteEntity, pageResponse);
             pageEntity.setContent("");
 
             System.out.println(
@@ -85,8 +90,8 @@ public class SiteMap {
         Document document = pageResponse.getDocument();
 
         if (document == null) {
-            SiteEntity siteEntity = methods.getSiteEntity(site);
-            methods.newLastError(siteEntity, pageResponse);
+            SiteEntity siteEntity = siteRepository.findSiteByUrl(site.getUrl());
+            newLastError(siteEntity, pageResponse);
         } else {
             Elements elements = document.select("a[href]");
             for (Element element : elements) {
@@ -104,7 +109,7 @@ public class SiteMap {
 
     public void savePage(Page page) {
         PageEntity pageEntity = setPageEntity(page);
-        methods.savePageEntity(pageEntity);
+        savePageEntity(pageEntity);
         page.setPageId(pageEntity.getId());
     }
 
@@ -113,6 +118,22 @@ public class SiteMap {
                 " linksSet.size() " + linksSet.size() +
                 "");
         linksSet.clear();
+    }
+
+    private void savePageEntity(PageEntity pageEntity) {
+        pageRepository.save(pageEntity);
+        SiteEntity siteEntity =
+                siteRepository.findById(pageEntity.getSiteId()).orElse(null);
+        if (siteEntity != null) {
+            siteEntity.setStatusTime(LocalDateTime.now());
+            siteRepository.save(siteEntity);
+        }
+    }
+
+    private void newLastError(SiteEntity siteEntity, PageResponse pageResponse) {
+        siteEntity.setLastError(pageResponse.getException().getMessage());
+        siteEntity.setStatusTime(LocalDateTime.now());
+        siteRepository.save(siteEntity);
     }
 
     public Gradation startGradation(Page page) {

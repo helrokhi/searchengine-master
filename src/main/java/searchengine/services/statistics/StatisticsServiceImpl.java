@@ -7,7 +7,9 @@ import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.SiteEntity;
-import searchengine.utils.methods.Methods;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,22 +17,24 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
-    private final Methods methods;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
 
     @Override
     public StatisticsResponse getStatistics() {
         System.out.println("1. StatisticsServiceImpl getStatistics" +
-                " siteService.getCountSites() - " + methods.getCountSites() +
+                " siteService.getCountSites() - " + siteRepository.countAllSites() +
                 "");
         StatisticsResponse response = new StatisticsResponse();
-        List<SiteEntity> siteEntityList = methods.findAllSiteEntities();
+        List<SiteEntity> siteEntityList = siteRepository.findAll();
 
         if (siteEntityList.isEmpty()) {
             response.setResult(false);
             response.setError("База данных пустая. Проведите индексацию сайтов.");
         } else {
             TotalStatistics total = new TotalStatistics();
-            total.setSites(methods.getCountSites());
+            total.setSites(siteRepository.countAllSites());
             total.setIndexing(true);
 
             List<DetailedStatisticsItem> detailed = new ArrayList<>();
@@ -39,14 +43,15 @@ public class StatisticsServiceImpl implements StatisticsService {
                 DetailedStatisticsItem item = new DetailedStatisticsItem();
                 item.setName(siteEntity.getName());
                 item.setUrl(siteEntity.getUrl());
-                item.setPages(methods.getCountAllPagesBySiteEntity(siteEntity));
-                item.setLemmas(methods.getCountLemmasBySiteEntity(siteEntity));
+                item.setPages(pageRepository
+                        .countAllPagesBySiteId(siteEntity.getId()));
+                item.setLemmas(lemmaRepository.countAllLemmasBySiteId(siteEntity.getId()));
                 item.setStatus(siteEntity.getStatus().toString());
                 item.setError(siteEntity.getLastError());
                 item.setStatusTime(siteEntity.getStatusTime());
 
-                total.setPages(methods.getCountPages());
-                total.setLemmas(methods.getCountLemmas());
+                total.setPages(pageRepository.countAllPages());
+                total.setLemmas(lemmaRepository.countAllLemmas());
                 detailed.add(item);
             }
             StatisticsData data = new StatisticsData();

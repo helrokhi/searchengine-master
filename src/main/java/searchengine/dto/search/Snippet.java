@@ -1,10 +1,10 @@
-package searchengine.config.search;
+package searchengine.dto.search;
 
 import org.jsoup.Jsoup;
+import searchengine.repositories.PageRepository;
 import searchengine.utils.gradations.CollectLemmas;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
-import searchengine.utils.methods.Methods;
 import searchengine.utils.search.DataItem;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class Snippet implements Callable<String> {
     private final DataItem dataItem;
-    private final Methods methods;
+    private final PageRepository pageRepository;
     private final CollectLemmas collectLemmas;
     private final StringBuilder stringBuilder = new StringBuilder(0);
     private final static int MAX_STEP = 11;
@@ -24,37 +24,40 @@ public class Snippet implements Callable<String> {
 
     public Snippet(
             DataItem dataItem,
-            Methods methods,
-            CollectLemmas collectLemmas
+            PageRepository pageRepository, CollectLemmas collectLemmas
     ) {
         this.dataItem = dataItem;
-        this.methods = methods;
+        this.pageRepository = pageRepository;
         this.collectLemmas = collectLemmas;
     }
 
     @Override
     public String call() {
-        PageEntity pageEntity = methods.getPageById(dataItem.getPageId());
-        String content = pageEntity.getContent();
-        String[] words = getBodyPage(content)
-                .trim()
-                .split("\\s+");
+        PageEntity pageEntity = pageRepository
+                .findById(dataItem.getPageId()).orElse(null);
+        if (pageEntity != null) {
+            String content = pageEntity.getContent();
+            String[] words = getBodyPage(content)
+                    .trim()
+                    .split("\\s+");
 
-        List<Integer> integerList = new ArrayList<>(0);
-        for (int i = 0; i < words.length; i++) {
-            String word = words[i]
-                    .toLowerCase(Locale.ROOT)
-                    .replaceAll(WORD_REGEX, "");
-            List<String> listWordLemma = collectLemmas.getAllWordForms(word);
-            List<String> listLemma = getListLemmas();
-            if (isWordInListOfLemmas(listLemma, listWordLemma)) {
-                integerList.add(i);
+            List<Integer> integerList = new ArrayList<>(0);
+            for (int i = 0; i < words.length; i++) {
+                String word = words[i]
+                        .toLowerCase(Locale.ROOT)
+                        .replaceAll(WORD_REGEX, "");
+                List<String> listWordLemma = collectLemmas.getAllWordForms(word);
+                List<String> listLemma = getListLemmas();
+                if (isWordInListOfLemmas(listLemma, listWordLemma)) {
+                    integerList.add(i);
+                }
             }
+            getSnippetPart(words, integerList);
         }
-        return getSnippetPart(words, integerList);
+        return stringBuilder.toString();
     }
 
-    private String getSnippetPart(String[] words, List<Integer> integerList) {
+    private void getSnippetPart(String[] words, List<Integer> integerList) {
         int step = (integerList.size() != 0) ? (LIMIT_WORDS / integerList.size()) : LIMIT_WORDS;
         step = (step % 2 == 0) ? step + 1 : step;
         step = Math.min(step, MAX_STEP);
@@ -86,7 +89,6 @@ public class Snippet implements Callable<String> {
                 integerList.remove(0);
             }
         }
-        return stringBuilder.toString();
     }
 
     private void getAppendStringBuilder(String[] words, int from, int to) {

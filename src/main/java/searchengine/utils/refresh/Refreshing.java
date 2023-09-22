@@ -4,12 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Component;
-import searchengine.config.gradations.Gradation;
-import searchengine.config.sitemaps.Page;
+import searchengine.dto.gradations.Gradation;
+import searchengine.utils.sitemaps.Page;
 import searchengine.config.sites.Site;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.utils.methods.Methods;
+import searchengine.repositories.PageRepository;
 import searchengine.utils.sitemaps.Remove;
 import searchengine.utils.sitemaps.SiteMap;
 
@@ -20,19 +20,19 @@ import java.util.List;
 public class Refreshing {
     private Page page;
     private final SiteMap siteMap;
-    private final Methods methods;
+    private final PageRepository pageRepository;
     private final Remove remove;
 
     public void refreshPageEntity(String link, List<SiteEntity> siteEntityList) {
         System.out.println("1. Refreshing refreshPageEntity" +
                 " link " + link +
                 "");
-        SiteEntity siteEntity = methods.getSiteEntityByLink(link, siteEntityList);
+        SiteEntity siteEntity = getSiteEntityByLink(link, siteEntityList);
         PageEntity pageEntity = getPageEntity(link, siteEntity);
         String url = siteEntity.getUrl();
         Site site = new Site();
         site.setUrl(siteEntity.getUrl());
-        site.setName(siteEntity.getUrl());
+        site.setName(siteEntity.getName());
 
         page = new Page(link, url, site);
 
@@ -54,7 +54,8 @@ public class Refreshing {
     }
 
     private PageEntity getPageEntity(String link, SiteEntity siteEntity) {
-        return methods.getPageByPath(getPath(link, siteEntity));
+        return pageRepository
+                .findByPath(getPath(link, siteEntity));
     }
 
     private String getPath(String link, SiteEntity siteEntity) {
@@ -72,6 +73,19 @@ public class Refreshing {
     }
 
     public boolean isLinkInSites(String link, List<SiteEntity> siteEntityList) {
-        return methods.isLinkInSiteEntityList(link, siteEntityList);
+        return isLinkInSiteEntityList(link, siteEntityList);
+    }
+
+    public SiteEntity getSiteEntityByLink(String link, List<SiteEntity> siteEntityList) {
+        for (SiteEntity siteEntity : siteEntityList) {
+            if (link.startsWith(siteEntity.getUrl()) || siteEntity.getUrl().equals(link)) {
+                return siteEntity;
+            }
+        }
+        return null;
+    }
+
+    public boolean isLinkInSiteEntityList(String link, List<SiteEntity> siteEntityList) {
+        return (getSiteEntityByLink(link, siteEntityList) != null);
     }
 }

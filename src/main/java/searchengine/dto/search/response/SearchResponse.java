@@ -1,4 +1,4 @@
-package searchengine.dto.search;
+package searchengine.dto.search.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

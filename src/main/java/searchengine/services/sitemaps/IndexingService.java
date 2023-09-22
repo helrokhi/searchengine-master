@@ -2,12 +2,13 @@ package searchengine.services.sitemaps;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import searchengine.model.Status;
+import searchengine.repositories.SiteRepository;
 import searchengine.utils.sitemaps.Indexing;
-import searchengine.config.sitemaps.Processor;
+import searchengine.dto.sitemaps.Processor;
 import searchengine.config.sites.Site;
 import searchengine.config.sites.SitesList;
 import searchengine.dto.indexing.IndexResponse;
-import searchengine.utils.methods.Methods;
 import searchengine.utils.sitemaps.SiteMap;
 
 import java.util.HashSet;
@@ -19,17 +20,17 @@ import java.util.concurrent.*;
 public class IndexingService {
     private final SitesList sites;
     private final Indexing indexing;
-    private final Methods methods;
+    private final SiteRepository siteRepository;
     private static final Set<Processor> siteThreadSet = new HashSet<>(0);
     private final ThreadPoolExecutor fixedThreadPool =
             (ThreadPoolExecutor) Executors.newFixedThreadPool(numberOfProcessorCores());
 
     public IndexResponse getStartIndexingResponse() {
         System.out.println("1. IndexingService getStartIndexingResponse" +
-                " siteService.getCountSites() - " + methods.getCountSites() +
+                " siteService.getCountSites() - " + siteRepository.countAllSites() +
                 "");
         IndexResponse response = new IndexResponse();
-        if (methods.isIndexing()) {
+        if (siteRepository.countAllByStatus(Status.INDEXING) != 0) {
             response.setResult(false);
             response.setError("Индексация уже запущена.");
         } else {
@@ -45,7 +46,7 @@ public class IndexingService {
     public IndexResponse getStopIndexingResponse() {
         System.out.println("1. IndexingService getStopIndexingResponse");
         IndexResponse response = new IndexResponse();
-        if (!methods.isIndexing()) {
+        if (siteRepository.countAllByStatus(Status.INDEXING) == 0) {
             response.setResult(false);
             response.setError("Индексация не запущена");
         } else {

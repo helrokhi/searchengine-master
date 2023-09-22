@@ -4,7 +4,6 @@ import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import searchengine.config.gradations.CollectLemmasInterface;
 
 import java.io.IOException;
 import java.util.ArrayList;

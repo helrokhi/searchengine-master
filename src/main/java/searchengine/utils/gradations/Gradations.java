@@ -2,18 +2,19 @@ package searchengine.utils.gradations;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import searchengine.config.gradations.Gradation;
-import searchengine.config.sitemaps.Page;
-import searchengine.utils.gradations.GradationCollectLemmas;
-import searchengine.utils.methods.Methods;
+import searchengine.dto.gradations.Gradation;
+import searchengine.utils.sitemaps.Page;
+import searchengine.repositories.IndexRepository;
+import searchengine.repositories.LemmaRepository;
 
 @Component
 @RequiredArgsConstructor
 public class Gradations {
-    private final Methods methods;
+    private final LemmaRepository lemmaRepository;
+    private final IndexRepository indexRepository;
     private final GradationCollectLemmas gradationCollectLemmas;
 
     public Gradation startGradation(Page page) {
-        return new Gradation(page, methods, gradationCollectLemmas);
+        return new Gradation(page, lemmaRepository, indexRepository, gradationCollectLemmas);
     }
 }

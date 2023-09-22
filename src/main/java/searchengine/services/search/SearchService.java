@@ -3,14 +3,15 @@ package searchengine.services.search;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 import searchengine.utils.search.DataItem;
 import searchengine.utils.search.Search;
-import searchengine.dto.search.DataResponse;
-import searchengine.dto.search.SearchResponse;
+import searchengine.dto.search.response.DataResponse;
+import searchengine.dto.search.response.SearchResponse;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.Status;
-import searchengine.utils.methods.Methods;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SearchService {
-    private final Methods methods;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
     private final Search search;
     private ExecutorService service = Executors.newCachedThreadPool();
     private List<DataItem> sortedDataItemList = new ArrayList<>(0);
@@ -32,7 +34,7 @@ public class SearchService {
             Integer offset,
             Integer limit) {
         System.out.println("1. SearchService getSearchResponse" +
-                " siteService.getCountSites() - " + methods.getCountSites() +
+                " siteService.getCountSites() - " + siteRepository.countAllSites() +
                 " \n query - " + query +
                 " \n offset " + offset +
                 " \n limit " + limit +
@@ -57,11 +59,11 @@ public class SearchService {
         return response;
     }
 
-    public void setResponse(String query,
+    private void setResponse(String query,
                             String url,
                             Integer offset,
                             Integer limit) {
-        List<SiteEntity> siteEntityList = methods.findAllSiteEntities();
+        List<SiteEntity> siteEntityList = siteRepository.findAll();
         System.out.println("1. SearchService setResponse" +
                 " query - " + query +
                 " offset " + offset +
@@ -79,13 +81,13 @@ public class SearchService {
         }
 
         if (url != null) {
-            SiteEntity siteEntity = methods.getSiteEntityByLink(url, siteEntityList);
-            System.out.println(
-                    " siteEntity - " + siteEntity.getUrl() +
-                            "");
+            SiteEntity siteEntity = getSiteEntityByLink(url, siteEntityList);
             if (siteEntity == null) {
                 response = getSearchResponseIfSiteEntityIsNull();
             } else {
+                System.out.println(
+                        " siteEntity - " + siteEntity.getUrl() +
+                                "");
                 if (siteEntity.getStatus() == Status.INDEXING) {
                     response = getSearchResponseIfSiteIsIndexing();
                     return;
@@ -106,11 +108,11 @@ public class SearchService {
                     "Поиск проводим по всем сайтам из списка." +
                             "");
 
-            if (methods.isIndexing()) {
+            if (siteRepository.countAllByStatus(Status.INDEXING) != 0) {
                 response = getSearchResponseIfSiteIsIndexing();
                 return;
             }
-            if (methods.isFailed()) {
+            if (siteRepository.countAllByStatus(Status.FAILED) != 0) {
                 response = getSearchResponseIfSiteIsFailed();
                 return;
             }
@@ -195,8 +197,10 @@ public class SearchService {
         List<DataResponse> responseList = new ArrayList<>();
 
         for (DataItem dataItem : dataItemList) {
-            PageEntity pageEntity = methods.getPageById(dataItem.getPageId());
-            SiteEntity siteEntity = methods.getSiteById(pageEntity.getSiteId());
+            PageEntity pageEntity = pageRepository
+                    .getReferenceById(dataItem.getPageId());
+            SiteEntity siteEntity = siteRepository
+                    .getReferenceById(pageEntity.getSiteId());
 
             DataResponse dataResponse = new DataResponse();
             dataResponse.setSite(siteEntity.getUrl());
@@ -231,5 +235,14 @@ public class SearchService {
                 .skip(offset)
                 .limit(limit)
                 .collect(Collectors.toList());
+    }
+
+    private SiteEntity getSiteEntityByLink(String link, List<SiteEntity> siteEntityList) {
+        for (SiteEntity siteEntity : siteEntityList) {
+            if (link.startsWith(siteEntity.getUrl()) || siteEntity.getUrl().equals(link)) {
+                return siteEntity;
+            }
+        }
+        return null;
     }
 }

@@ -1,4 +1,4 @@
-package searchengine.config.sitemaps;
+package searchengine.dto.sitemaps;
 
 import lombok.AllArgsConstructor;
 
@@ -10,8 +10,10 @@ public class Interrupter implements Runnable {
     public void run() {
         processor.interrupt();
         processor.getForkJoinPool().shutdown();
+        processor.getPoolExecutor().getQueue().clear();
         System.out.println("Interrupter run" +
                 " site: " + processor.getSite().getUrl() + " stop! " +
+                " queued " + processor.getPoolExecutor().getQueue().size() +
                 "");
     }
 }
