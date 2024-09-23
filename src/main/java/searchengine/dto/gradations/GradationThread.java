@@ -1,20 +1,20 @@
 package searchengine.dto.gradations;
 
 import lombok.AllArgsConstructor;
-import searchengine.utils.sitemaps.Page;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.utils.gradations.GradationCollectLemmas;
+import searchengine.utils.sitemaps.SitePage;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
-public class Gradation extends Thread {
-    private final Page page;
+public class GradationThread extends Thread {
+    private final SitePage page;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
     private final GradationCollectLemmas gradationCollectLemmas;

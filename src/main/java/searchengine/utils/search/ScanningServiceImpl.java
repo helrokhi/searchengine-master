@@ -1,28 +1,29 @@
 package searchengine.utils.search;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import searchengine.dto.search.Scanning;
+import org.springframework.stereotype.Service;
+import searchengine.dto.search.ScanningCall;
 import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.utils.gradations.CollectLemmas;
 import searchengine.model.SiteEntity;
 
-@Component
+@Service
 @RequiredArgsConstructor
-public class Search {
+public class ScanningServiceImpl implements ScanningService {
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
     private final CollectLemmas collectLemmas;
-    private final Fragment fragment;
+    private final FragmentService fragmentService;
 
-    public Scanning startScanning(String query, SiteEntity siteEntity) {
-        return new Scanning(query, siteEntity,
+    @Override
+    public ScanningCall startScanning(String query, SiteEntity siteEntity) {
+        return new ScanningCall(query, siteEntity,
                 pageRepository,
                 lemmaRepository, indexRepository,
                 collectLemmas,
-                fragment);
+                fragmentService);
     }
 }

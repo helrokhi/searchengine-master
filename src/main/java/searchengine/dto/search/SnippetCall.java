@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-public class Snippet implements Callable<String> {
+public class SnippetCall implements Callable<String> {
     private final DataItem dataItem;
     private final PageRepository pageRepository;
     private final CollectLemmas collectLemmas;
@@ -22,7 +22,7 @@ public class Snippet implements Callable<String> {
     private final static int LIMIT_WORDS = 101;
     private final static String WORD_REGEX = "[^\\p{L}\\p{N}+]";
 
-    public Snippet(
+    public SnippetCall(
             DataItem dataItem,
             PageRepository pageRepository, CollectLemmas collectLemmas
     ) {
@@ -58,7 +58,7 @@ public class Snippet implements Callable<String> {
     }
 
     private void getSnippetPart(String[] words, List<Integer> integerList) {
-        int step = (integerList.size() != 0) ? (LIMIT_WORDS / integerList.size()) : LIMIT_WORDS;
+        int step = (!integerList.isEmpty()) ? (LIMIT_WORDS / integerList.size()) : LIMIT_WORDS;
         step = (step % 2 == 0) ? step + 1 : step;
         step = Math.min(step, MAX_STEP);
         int halfStep = step / 2;
@@ -76,13 +76,13 @@ public class Snippet implements Callable<String> {
                         getAppendStringBuilder(words, before + 1, first - 1);
                     } else {
                         getAppendStringBuilder(words, before + 1, before + halfStep);
-                        stringBuilder.append(stringBuilder.length() == 0 ? "" : " ")
+                        stringBuilder.append(stringBuilder.isEmpty() ? "" : " ")
                                 .append("...");
                         getAppendStringBuilder(words, first - halfStep, first - 1);
                     }
                 }
 
-                stringBuilder.append(stringBuilder.length() == 0 ? "" : " ")
+                stringBuilder.append(stringBuilder.isEmpty() ? "" : " ")
                         .append(getUpdatedWord(words[first]));
 
                 before = first;
@@ -93,14 +93,14 @@ public class Snippet implements Callable<String> {
 
     private void getAppendStringBuilder(String[] words, int from, int to) {
         for (int i = from; i < to; i++) {
-            stringBuilder.append(stringBuilder.length() == 0 ? "" : " ")
+            stringBuilder.append(stringBuilder.isEmpty() ? "" : " ")
                     .append(words[i]);
         }
     }
 
     private void getTextSnippet(String[] words, int i, int halfStep) {
         getAppendStringBuilder(words, i - 1 - halfStep, i - 1);
-        stringBuilder.append(stringBuilder.length() == 0 ? "" : " ")
+        stringBuilder.append(stringBuilder.isEmpty() ? "" : " ")
                 .append(getUpdatedWord(words[i]));
         getAppendStringBuilder(words, i + 1, i + 1 + halfStep);
     }

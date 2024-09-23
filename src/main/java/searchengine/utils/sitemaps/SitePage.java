@@ -1,8 +1,7 @@
 package searchengine.utils.sitemaps;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.stereotype.Component;
 import searchengine.config.sites.Site;
 
@@ -11,21 +10,20 @@ import java.util.Objects;
 import java.util.Set;
 
 @Component
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
-public class Page {
+public class SitePage {
     private String link;
     private String prefix;
     private Site site;
-    private Set<Page> subPages;
+    private Set<SitePage> subPages;
     private String suffix;
     private String text;
 
     private int siteId;
     private int pageId;
 
-    public Page(String link, String prefix, Site site) {
+    public SitePage(String link, String prefix, Site site) {
         this.link = link;
         this.prefix = prefix;
         this.subPages = new HashSet<>(0);
@@ -34,7 +32,7 @@ public class Page {
         this.text = "";
     }
 
-    public void addSubPages(Page subPage) {
+    public void addSubPages(SitePage subPage) {
         if (isLink(subPage.getLink()) && !subPages.contains(subPage)) {
             synchronized (subPages) {
                 subPages.add(subPage);
@@ -56,7 +54,7 @@ public class Page {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Page page = (Page) o;
+        SitePage page = (SitePage) o;
         return link.equals(page.link);
     }
 

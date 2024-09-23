@@ -1,7 +1,8 @@
 package searchengine.utils.sitemaps;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import searchengine.config.sites.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
@@ -17,15 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Component
+@Slf4j
+@Service
 @RequiredArgsConstructor
-public class Remove {
+public class RemoveServiceImpl implements RemoveService {
     private final SiteRepository siteRepository;
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
     private final GradationCollectLemmas gradationCollectLemmas;
 
+    @Override
     public void deleteAll(Site site) {
         SiteEntity siteEntity = siteRepository.findSiteByUrl(site.getUrl());
         if (siteEntity != null) {
@@ -39,26 +42,19 @@ public class Remove {
                     (List<Integer>) lemmaRepository.findAllLemmasIdBySiteId(siteId);
 
             lemmaRepository.deleteAllByIdInBatch(listLemmasIdBySiteId);
-            System.out.println("\tLemmaService deleteLemmas" +
-                    " siteEntity " + siteEntity.getUrl() +
-                    " count " + listLemmasIdBySiteId.size() +
-                    " siteId " + siteId +
-                    "");
+            log.info("\tLemmaService deleteLemmas siteEntity {}  count {} siteId {}",
+                    siteEntity.getUrl(), listLemmasIdBySiteId.size(), siteId);
 
             pageRepository.deleteAllByIdInBatch(listPageIdBySiteEntity);
-            System.out.println("\tPageService deletePages" +
-                    " siteEntity: " + siteEntity.getUrl() +
-                    " count: " + listPageIdBySiteEntity.size() +
-                    " siteId: " + siteEntity.getId() +
-                    "");
-            System.out.println("\tSiteService deleteSite" +
-                    " SiteEntity " + siteEntity.getUrl() +
-                    "");
+            log.info("\tPageService deletePages siteEntity: {} count: {} siteId: {}",
+                    siteEntity.getUrl(), listPageIdBySiteEntity.size(), siteEntity.getId());
+            log.info("\tSiteService deleteSite SiteEntity {}", siteEntity.getUrl());
             siteRepository.delete(siteEntity);
         }
     }
 
-    public void deleteAllPage(Page page) {
+    @Override
+    public void deleteAllPage(SitePage page) {
         PageEntity pageEntity = pageRepository
                 .findById(page.getPageId()).orElse(null);
         if (pageEntity != null) {
@@ -72,9 +68,7 @@ public class Remove {
             deleteLemmasByPage(page,
                     getListOldLemmasWhoseFrequencyIsOne(oldLemmaList),
                     getCollectionOldLemmasWhoseFrequencyGreaterOne(oldLemmaList));
-            System.out.print("\tPageService deletePage" +
-                    " pageId " + pageEntity.getId() +
-                    "");
+            log.info("\tPageService deletePage pageId {}", + pageEntity.getId());
             pageRepository.deleteById(pageEntity.getId());
         }
     }
@@ -94,14 +88,12 @@ public class Remove {
     }
 
     private void deleteLemmasByPage(
-            Page page,
+            SitePage page,
             List<Integer> list,
             Collection<LemmaEntity> collection) {
         lemmaRepository.deleteAllByIdInBatch(list);
         decrementFrequencyAllLemmasEntity(collection);
-        System.out.println("\tLemmaService deleteLemmasByPage" +
-                " page " + page.getLink() +
-                "");
+        log.info("\tLemmaService deleteLemmasByPage page {}", page.getLink());
     }
 
     private void decrementFrequencyAllLemmasEntity(Collection<LemmaEntity> list) {
@@ -114,9 +106,7 @@ public class Remove {
     }
 
     private void deleteAllIndex(List<Integer> listPageId) {
-        System.out.println("\tIndexService deleteIndex" +
-                " count " + listPageId.size() +
-                "");
+        log.info("\tIndexService deleteIndex count {}", + listPageId.size());
         listPageId.forEach(this::deleteAllIndexByPageId);
     }
 

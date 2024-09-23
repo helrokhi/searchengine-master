@@ -1,16 +1,15 @@
-server:
-  port: 8080
-
 spring:
   datasource:
     username: root
-    password: z6!srKWJfnh8FyJ
+    password: 11111111
     url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
     charset: utf8mb4
   jpa:
+    open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
+        enable_lazy_load_no_trans: true
     hibernate:
       ddl-auto: update
       show-sql: true
@@ -19,9 +18,5 @@ indexing-settings:
   sites:
     - url: https://playback.ru
       name: PlayBack.Ru
-    - url: https://lenta.ru
-      name: Лента.ру
-    - url: https://skillbox.ru
-      name: Skillbox
     - url: https://edition.cnn.com
       name: edition.cnn

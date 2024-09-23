@@ -12,14 +12,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 @Component
 public class SiteMapRecursive extends RecursiveAction {
-    private Page page;
+    private SitePage page;
     private SiteMap siteMap;
     private ForkJoinPool forkJoinPool;
     private ThreadPoolExecutor poolExecutor;
 
     @Autowired
     public SiteMapRecursive(
-            Page page,
+            SitePage page,
             SiteMap siteMap,
             ForkJoinPool forkJoinPool,
             ThreadPoolExecutor poolExecutor
@@ -33,11 +33,11 @@ public class SiteMapRecursive extends RecursiveAction {
     @Override
     protected void compute() {
         savePage();
-        Set<Page> subPagesSet = getSubPagesSet();
+        Set<SitePage> subPagesSet = getSubPagesSet();
         submissions();
 
         Set<SiteMapRecursive> subTasks = new HashSet<>();
-        for (Page subPage : subPagesSet) {
+        for (SitePage subPage : subPagesSet) {
             if (isRunning()) {
                 SiteMapRecursive task = new SiteMapRecursive(subPage, siteMap, forkJoinPool, poolExecutor);
                 task.fork();
@@ -47,7 +47,7 @@ public class SiteMapRecursive extends RecursiveAction {
         subTasks.forEach(ForkJoinTask::join);
     }
 
-    private Set<Page> getSubPagesSet() {
+    private Set<SitePage> getSubPagesSet() {
         siteMap.subPagesSet(page);
         return isRunning() ? page.getSubPages() : new HashSet<>(0);
     }

@@ -1,5 +1,6 @@
 package searchengine.dto.search;
 
+import lombok.AllArgsConstructor;
 import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
@@ -7,39 +8,21 @@ import searchengine.utils.gradations.CollectLemmas;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 import searchengine.utils.search.DataItem;
-import searchengine.utils.search.Fragment;
+import searchengine.utils.search.FragmentService;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class Scanning implements Callable<List<DataItem>> {
+@AllArgsConstructor
+public class ScanningCall implements Callable<List<DataItem>> {
     private final String query;
     private final SiteEntity siteEntity;
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
     private final CollectLemmas collectLemmas;
-    private final Fragment fragment;
-    private ExecutorService executorService = Executors.newCachedThreadPool();
-
-    public Scanning(
-            String query,
-            SiteEntity siteEntity,
-            PageRepository pageRepository,
-            LemmaRepository lemmaRepository,
-            IndexRepository indexRepository,
-            CollectLemmas collectLemmas,
-            Fragment fragment
-    ) {
-        this.query = query;
-        this.siteEntity = siteEntity;
-        this.pageRepository = pageRepository;
-        this.lemmaRepository = lemmaRepository;
-        this.indexRepository = indexRepository;
-        this.collectLemmas = collectLemmas;
-        this.fragment = fragment;
-    }
+    private final FragmentService fragmentService;
 
     @Override
     public List<DataItem> call() {
@@ -119,8 +102,9 @@ public class Scanning implements Callable<List<DataItem>> {
 
         for (DataItem dataItem : dataItemListFromDataBase) {
             dataItem.setRelevance(dataItem.getCountRank() / maxRelevance);
-            FutureTask<String> futureTask = new FutureTask<>(fragment.startSnippet(dataItem));
-            executorService.execute(futureTask);
+            FutureTask<String> futureTask = new FutureTask<>(fragmentService.startSnippet(dataItem));
+
+            Executors.newCachedThreadPool().execute(futureTask);
 
             try {
                 dataItem.setSnippet(futureTask.get());

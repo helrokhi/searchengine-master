@@ -1,19 +1,19 @@
 package searchengine.utils.search;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import searchengine.dto.search.Snippet;
+import org.springframework.stereotype.Service;
+import searchengine.dto.search.SnippetCall;
 import searchengine.repositories.PageRepository;
 import searchengine.utils.gradations.CollectLemmas;
 
-@Component
+@Service
 @RequiredArgsConstructor
-public class Fragment {
+public class FragmentServiceImpl implements FragmentService {
     private final PageRepository pageRepository;
-
     private final CollectLemmas collectLemmas;
 
-    public Snippet startSnippet(DataItem dataItem) {
-        return new Snippet(dataItem, pageRepository, collectLemmas);
+    @Override
+    public SnippetCall startSnippet(DataItem dataItem) {
+        return new SnippetCall(dataItem, pageRepository, collectLemmas);
     }
 }

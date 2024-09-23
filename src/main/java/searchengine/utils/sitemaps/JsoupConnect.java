@@ -4,7 +4,7 @@ import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
-import searchengine.dto.sites.PageResponse;
+import searchengine.dto.sites.PageDto;
 
 import java.io.IOException;
 
@@ -12,24 +12,24 @@ import static java.lang.Thread.sleep;
 
 @Component
 public class JsoupConnect {
-    public PageResponse getPageResponse(String link) {
+    public PageDto setPageDto(String link) {
         Document document;
-        PageResponse pageResponse = new PageResponse();
+        PageDto pageDto = new PageDto();
         try {
             sleep(150);
             document = Jsoup.connect(link).get();
         } catch (HttpStatusException statusException) {
-            pageResponse.setException(statusException);
-            pageResponse.setCode(statusException.getStatusCode());
-            return pageResponse;
+            pageDto.setException(statusException);
+            pageDto.setCode(statusException.getStatusCode());
+            return pageDto;
         } catch (IOException | InterruptedException exception) {
-            pageResponse.setException(exception);
-            pageResponse.setCode(404);
-            return pageResponse;
+            pageDto.setException(exception);
+            pageDto.setCode(404);
+            return pageDto;
         }
-        pageResponse.setDocument(document);
-        pageResponse.setCode(document.connection().response().statusCode());
+        pageDto.setDocument(document);
+        pageDto.setCode(document.connection().response().statusCode());
 
-        return pageResponse;
+        return pageDto;
     }
 }

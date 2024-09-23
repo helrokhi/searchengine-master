@@ -1,9 +1,11 @@
 package searchengine.dto.search.response;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class DataResponse {
+@Builder
+public class DataDto {
     private String site;
     private String siteName;
     private String uri;

@@ -1,7 +1,9 @@
 package searchengine.services.statistics;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import searchengine.dto.enums.MessageType;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
@@ -14,6 +16,7 @@ import searchengine.repositories.SiteRepository;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
@@ -23,15 +26,14 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public StatisticsResponse getStatistics() {
-        System.out.println("1. StatisticsServiceImpl getStatistics" +
-                " siteService.getCountSites() - " + siteRepository.countAllSites() +
-                "");
+        log.info("1. StatisticsServiceImpl getStatistics " +
+                "siteService.getCountSites() - {}", siteRepository.countAllSites());
         StatisticsResponse response = new StatisticsResponse();
         List<SiteEntity> siteEntityList = siteRepository.findAll();
 
         if (siteEntityList.isEmpty()) {
             response.setResult(false);
-            response.setError("База данных пустая. Проведите индексацию сайтов.");
+            response.setError(MessageType.ENTITY_DB_MESSAGE.getDescription());
         } else {
             TotalStatistics total = new TotalStatistics();
             total.setSites(siteRepository.countAllSites());
@@ -60,9 +62,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             response.setStatistics(data);
             response.setResult(true);
         }
-        System.out.println("2. StatisticsServiceImpl getStatistics" +
-                " response " + response +
-                "");
+        log.info("2. StatisticsServiceImpl getStatistics" +
+                " statisticsDto {}", response);
         return response;
     }
 }

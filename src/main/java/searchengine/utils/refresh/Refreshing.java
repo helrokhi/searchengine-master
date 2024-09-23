@@ -1,32 +1,32 @@
 package searchengine.utils.refresh;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
-import org.springframework.stereotype.Component;
-import searchengine.dto.gradations.Gradation;
-import searchengine.utils.sitemaps.Page;
+import org.springframework.stereotype.Service;
+import searchengine.dto.gradations.GradationThread;
 import searchengine.config.sites.Site;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repositories.PageRepository;
-import searchengine.utils.sitemaps.Remove;
+import searchengine.utils.sitemaps.RemoveService;
 import searchengine.utils.sitemaps.SiteMap;
+import searchengine.utils.sitemaps.SitePage;
 
 import java.util.List;
 
-@Component
+@Slf4j
+@Service
 @RequiredArgsConstructor
-public class Refreshing {
-    private Page page;
+public class Refreshing implements RefreshService{
+    private SitePage page;
     private final SiteMap siteMap;
     private final PageRepository pageRepository;
-    private final Remove remove;
+    private final RemoveService remove;
 
     public void refreshPageEntity(String link, List<SiteEntity> siteEntityList) {
-        System.out.println("1. Refreshing refreshPageEntity" +
-                " link " + link +
-                "");
+        log.info("1.Refresh PageEntity link {}", link);
         SiteEntity siteEntity = getSiteEntityByLink(link, siteEntityList);
         PageEntity pageEntity = getPageEntity(link, siteEntity);
         String url = siteEntity.getUrl();
@@ -34,7 +34,7 @@ public class Refreshing {
         site.setUrl(siteEntity.getUrl());
         site.setName(siteEntity.getName());
 
-        page = new Page(link, url, site);
+        page = new SitePage(link, url, site);
 
         if (pageEntity == null) {
             page.setSiteId(siteEntity.getId());
@@ -48,9 +48,7 @@ public class Refreshing {
         siteMap.savePage(page);
         startGradation();
 
-        System.out.println("2. Refreshing refreshPageEntity" +
-                " pageEntity " + pageEntity +
-                "");
+        log.info("2. Refresh PageEntity pageEntity {}", pageEntity);
     }
 
     private PageEntity getPageEntity(String link, SiteEntity siteEntity) {
@@ -63,20 +61,21 @@ public class Refreshing {
     }
 
     private void startGradation() {
-        Gradation gradation = siteMap.startGradation(page);
-        gradation.start();
+        GradationThread gradationThread = siteMap.startGradation(page);
+        gradationThread.start();
         try {
-            gradation.join();
+            gradationThread.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Override
     public boolean isLinkInSites(String link, List<SiteEntity> siteEntityList) {
         return isLinkInSiteEntityList(link, siteEntityList);
     }
 
-    public SiteEntity getSiteEntityByLink(String link, List<SiteEntity> siteEntityList) {
+    private SiteEntity getSiteEntityByLink(String link, List<SiteEntity> siteEntityList) {
         for (SiteEntity siteEntity : siteEntityList) {
             if (link.startsWith(siteEntity.getUrl()) || siteEntity.getUrl().equals(link)) {
                 return siteEntity;
@@ -85,7 +84,7 @@ public class Refreshing {
         return null;
     }
 
-    public boolean isLinkInSiteEntityList(String link, List<SiteEntity> siteEntityList) {
+    private boolean isLinkInSiteEntityList(String link, List<SiteEntity> siteEntityList) {
         return (getSiteEntityByLink(link, siteEntityList) != null);
     }
 }

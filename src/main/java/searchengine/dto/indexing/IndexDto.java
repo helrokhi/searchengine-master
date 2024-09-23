@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class IndexResponse {
+public class IndexDto {
     private boolean result;
     private String error;
 }

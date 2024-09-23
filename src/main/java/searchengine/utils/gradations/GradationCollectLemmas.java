@@ -6,10 +6,10 @@ import lombok.Setter;
 import org.springframework.stereotype.Component;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
-import searchengine.utils.sitemaps.Page;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.repositories.LemmaRepository;
+import searchengine.utils.sitemaps.SitePage;
 
 import java.util.*;
 
@@ -27,12 +27,12 @@ public class GradationCollectLemmas {
         return collectLemmas.collectLemmas(text);
     }
 
-    public Map<String, Integer> getLemmasMap(Page page) {
+    public Map<String, Integer> getLemmasMap(SitePage page) {
         return getCollectLemmas(page.getText());
     }
 
     public List<LemmaEntity> getNewLemmaList(
-            Page page,
+            SitePage page,
             Map<String, Integer> wordsMap,
             Collection<String> lemmas) {
         List<LemmaEntity> newLemmaList = new ArrayList<>(0);
@@ -48,7 +48,7 @@ public class GradationCollectLemmas {
         return newLemmaList;
     }
 
-    public List<IndexEntity> getIndexList(Page page, Map<String, Integer> wordsMap) {
+    public List<IndexEntity> getIndexList(SitePage page, Map<String, Integer> wordsMap) {
         List<IndexEntity> list = new ArrayList<>(0);
         wordsMap.forEach((key, value) -> {
             int lemmaId = lemmaRepository.getLemmaId(key, page.getSiteId());
